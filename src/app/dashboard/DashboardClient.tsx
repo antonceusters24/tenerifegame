@@ -205,35 +205,35 @@ export default function DashboardClient({
 
         {/* Before game */}
         {gameStatus === "before" && (
-          <div className="flex flex-col items-center pt-3">
+          <div className="flex flex-col items-center justify-between pt-4 min-h-[calc(100dvh-120px)]">
             {/* Hero */}
-            <div className="mb-3 text-center">
+            <div className="mb-4 text-center">
               <div className="relative inline-block">
-                <p className="text-5xl animate-bounce" style={{ animationDuration: "3s" }}>🏝️</p>
+                <p className="text-7xl animate-bounce" style={{ animationDuration: "3s" }}>🏝️</p>
                 <div className="absolute -inset-4 -z-10 rounded-full bg-amber-500/10 blur-2xl" />
               </div>
-              <h2 className="mt-2 text-4xl font-black tracking-tight text-white" style={{ textShadow: "0 0 40px rgba(245, 158, 11, 0.3)" }}>
+              <h2 className="mt-3 text-5xl font-black tracking-tight text-white" style={{ textShadow: "0 0 40px rgba(245, 158, 11, 0.3)" }}>
                 TENERIFE
               </h2>
-              <p className="text-xl font-black text-amber-400">2026</p>
-              <p className="mt-1 text-xs text-gray-400 font-medium">
+              <p className="text-2xl font-black text-amber-400">2026</p>
+              <p className="mt-2 text-sm font-semibold text-amber-200/70">
                 Maximaal vruuten, zuipen en vapen
               </p>
             </div>
 
             {/* Countdown */}
-            <div className="w-full rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-slate-800/80 to-slate-900/80 p-4 text-center shadow-xl shadow-amber-500/5">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400/60">
+            <div className="w-full rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-slate-800/80 to-slate-900/80 p-5 text-center shadow-xl shadow-amber-500/5">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400/60">
                 ⏳ Countdown
               </p>
-              <p className="mt-1 text-5xl font-black text-amber-400" style={{ textShadow: "0 0 30px rgba(245, 158, 11, 0.4)" }}>
+              <p className="mt-2 text-6xl font-black text-amber-400" style={{ textShadow: "0 0 30px rgba(245, 158, 11, 0.4)" }}>
                 {daysUntil}
               </p>
-              <p className="text-sm font-bold text-white/90">
+              <p className="mt-1 text-base font-bold text-white/90">
                 {daysUntil === 1 ? "dag" : "dagen"} te gaan
               </p>
-              <div className="mx-auto mt-2 h-px w-2/3 bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
-              <div className="mt-2 flex items-center justify-center gap-4 text-xs text-gray-400">
+              <div className="mx-auto mt-3 h-px w-2/3 bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+              <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-400">
                 <span>🛫 12 mei</span>
                 <span className="text-amber-500">→</span>
                 <span>🛬 19 mei</span>
@@ -244,7 +244,7 @@ export default function DashboardClient({
             </div>
 
             {/* Crew */}
-            <div className="mt-4 w-full">
+            <div className="mt-5 w-full">
               <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600">
                 ✈️ Crew
               </p>
@@ -257,14 +257,14 @@ export default function DashboardClient({
                 ].map((player) => (
                   <div
                     key={player.name}
-                    className={`rounded-xl border px-2 py-2 flex flex-col items-center justify-center text-center gap-0.5 transition ${
+                    className={`rounded-xl border px-2 py-3 flex flex-col items-center justify-center text-center gap-1 transition ${
                       player.name === user.name
                         ? "border-amber-500/50 bg-gradient-to-b from-amber-500/10 to-transparent shadow-md shadow-amber-500/5"
                         : "border-slate-700/60 bg-slate-800/40"
                     }`}
                   >
-                    <span className="text-lg">{player.emoji}</span>
-                    <p className={`text-[11px] font-bold ${player.name === user.name ? "text-amber-400" : "text-white"}`}>
+                    <span className="text-2xl">{player.emoji}</span>
+                    <p className={`text-xs font-bold ${player.name === user.name ? "text-amber-400" : "text-white"}`}>
                       {player.name}
                     </p>
                   </div>
@@ -273,12 +273,12 @@ export default function DashboardClient({
             </div>
 
             {/* Teaser */}
-            <div className="mt-4 w-full rounded-2xl border border-dashed border-amber-500/20 bg-slate-800/30 px-4 py-3 text-center">
-              <p className="text-sm">🤫</p>
-              <p className="mt-0.5 text-[11px] font-medium text-gray-400">
+            <div className="mt-5 w-full rounded-2xl border border-dashed border-amber-500/20 bg-slate-800/30 px-4 py-4 text-center">
+              <p className="text-base">🤫</p>
+              <p className="mt-1 text-xs font-medium text-gray-400">
                 Prepare for takeoff, more to come...
               </p>
-              <p className="mt-0.5 text-[10px] text-gray-600 italic">
+              <p className="mt-1 text-[10px] text-gray-600 italic">
                 Bereid je goed voor — meer info volgt op 12 mei.
               </p>
             </div>
