@@ -250,10 +250,10 @@ export default function DashboardClient({
               </p>
               <div className="grid w-full grid-cols-2 gap-2">
                 {[
-                  { name: "Lander", emoji: "🥚", title: "Landerke Panterke" },
+                  { name: "Lander", emoji: "🐆", title: "Landerke Panterke" },
                   { name: "Berten", emoji: "🚬", title: "De Saffer" },
                   { name: "Dries", emoji: "🍆", title: "Meau aanbidder" },
-                  { name: "Anton", emoji: "✈️", title: "Mr Turkish Airlines" },
+                  { name: "Anton", emoji: "🥚", title: "Mr Turkish Airlines" },
                 ].map((player) => (
                   <div
                     key={player.name}
@@ -273,6 +273,17 @@ export default function DashboardClient({
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Teaser */}
+            <div className="mt-6 w-full rounded-2xl border border-dashed border-amber-500/20 bg-slate-800/30 p-4 text-center">
+              <p className="text-lg">🤫</p>
+              <p className="mt-1 text-xs font-medium text-gray-400">
+                Er staat meer op het spel dan je denkt...
+              </p>
+              <p className="mt-1 text-[10px] text-gray-600 italic">
+                Challenges, straffen & punten — meer info volgt op dag 1.
+              </p>
             </div>
           </div>
         )}
