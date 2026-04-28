@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import { User, Assignment, PendingConfirmation } from "@/lib/types";
@@ -205,58 +205,67 @@ export default function DashboardClient({
 
         {/* Before game */}
         {gameStatus === "before" && (
-          <div className="flex flex-col items-center pt-8">
-            <div className="mb-8 text-center">
-              <p className="text-8xl">🏝️</p>
-              <h2 className="mt-4 text-4xl font-black text-white">
-                TENERIFE 2026
+          <div className="flex flex-col items-center pt-6">
+            {/* Hero */}
+            <div className="mb-6 text-center">
+              <div className="relative inline-block">
+                <p className="text-8xl animate-bounce" style={{ animationDuration: "3s" }}>🏝️</p>
+                <div className="absolute -inset-4 -z-10 rounded-full bg-amber-500/10 blur-2xl" />
+              </div>
+              <h2 className="mt-4 text-5xl font-black tracking-tight text-white" style={{ textShadow: "0 0 40px rgba(245, 158, 11, 0.3)" }}>
+                TENERIFE
               </h2>
-              <p className="mt-2 text-lg text-amber-400 font-bold">
+              <p className="text-2xl font-black text-amber-400">2026</p>
+              <p className="mt-2 text-sm text-gray-400 font-medium">
                 Maximaal vruuten, zuipen en vapen
               </p>
             </div>
 
-            <div className="w-full rounded-2xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 to-transparent p-6 text-center backdrop-blur">
-              <p className="text-sm font-medium uppercase tracking-wider text-gray-400">
-                Countdown
+            {/* Countdown */}
+            <div className="w-full rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-slate-800/80 to-slate-900/80 p-6 text-center shadow-xl shadow-amber-500/5">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400/60">
+                ⏳ Countdown
               </p>
-              <p className="mt-2 text-6xl font-black text-amber-400">
+              <p className="mt-3 text-7xl font-black text-amber-400" style={{ textShadow: "0 0 30px rgba(245, 158, 11, 0.4)" }}>
                 {daysUntil}
               </p>
-              <p className="mt-1 text-lg font-bold text-white">
+              <p className="mt-1 text-lg font-bold text-white/90">
                 {daysUntil === 1 ? "dag" : "dagen"} te gaan
               </p>
-              <div className="mt-4 h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent" />
-              <p className="mt-4 text-sm text-gray-400">
-                🗓️ 12 mei → 19 mei
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                 7 dagen vermaak, 1 winnaar
+              <div className="mx-auto mt-4 h-px w-2/3 bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+              <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
+                <span>🛫 12 mei</span>
+                <span className="text-amber-500">→</span>
+                <span>🛬 19 mei</span>
+              </div>
+              <p className="mt-2 text-[10px] text-gray-600">
+                7 dagen vermaak, 1 winnaar
               </p>
             </div>
 
+            {/* Crew */}
             <div className="mt-6 w-full">
-              <p className="mb-2 text-center text-xs font-bold uppercase tracking-widest text-gray-500">
-                ✈️ Passagiers
+              <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600">
+                ✈️ Crew
               </p>
               <div className="grid w-full grid-cols-2 gap-2">
                 {[
-                  { name: "Lander", emoji: "�‍🦲", title: "Landerke Panterke" },
+                  { name: "Lander", emoji: "🥚", title: "Landerke Panterke" },
                   { name: "Berten", emoji: "🚬", title: "De Saffer" },
                   { name: "Dries", emoji: "🍆", title: "Meau aanbidder" },
                   { name: "Anton", emoji: "✈️", title: "Mr Turkish Airlines" },
                 ].map((player) => (
                   <div
                     key={player.name}
-                    className={`rounded-xl border px-3 py-2.5 flex items-center gap-2 ${
+                    className={`rounded-xl border px-3 py-2.5 flex items-center gap-3 transition ${
                       player.name === user.name
-                        ? "border-amber-500/60 bg-amber-500/10"
-                        : "border-slate-700/80 bg-slate-800/60"
+                        ? "border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-transparent shadow-md shadow-amber-500/5"
+                        : "border-slate-700/60 bg-slate-800/40"
                     }`}
                   >
-                    <p className="text-lg">{player.emoji}</p>
+                    <span className="text-xl">{player.emoji}</span>
                     <div>
-                      <p className={`text-xs font-bold ${player.name === user.name ? "text-amber-400" : "text-gray-300"}`}>
+                      <p className={`text-sm font-bold ${player.name === user.name ? "text-amber-400" : "text-white"}`}>
                         {player.name}
                       </p>
                       <p className="text-[10px] text-gray-500">{player.title}</p>
