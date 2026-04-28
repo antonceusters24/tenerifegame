@@ -210,32 +210,33 @@ export default function DashboardClient({
             <div className="mb-4 text-center">
               <div className="relative inline-block">
                 <p className="text-7xl animate-bounce" style={{ animationDuration: "3s" }}>🏝️</p>
-                <div className="absolute -inset-4 -z-10 rounded-full bg-amber-500/10 blur-2xl" />
+                <div className="absolute -inset-6 -z-10 rounded-full bg-amber-500/20 blur-3xl animate-pulse" />
               </div>
-              <h2 className="mt-3 text-5xl font-black tracking-tight text-white" style={{ textShadow: "0 0 40px rgba(245, 158, 11, 0.3)" }}>
+              <h2 className="mt-3 text-5xl font-black tracking-tight text-white" style={{ textShadow: "0 0 40px rgba(245, 158, 11, 0.4), 0 0 80px rgba(245, 158, 11, 0.1)" }}>
                 TENERIFE
               </h2>
-              <p className="text-2xl font-black text-amber-400">2026</p>
-              <p className="mt-2 text-sm font-bold uppercase tracking-[0.15em] bg-gradient-to-r from-amber-400 via-orange-300 to-amber-400 bg-clip-text text-transparent">
-                Maximaal vruuten, zuipen en vapen
+              <p className="text-2xl font-black text-amber-400" style={{ textShadow: "0 0 20px rgba(245, 158, 11, 0.3)" }}>2026</p>
+              <p className="mt-2 text-sm italic font-medium tracking-wide bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 bg-clip-text text-transparent animate-pulse" style={{ animationDuration: "4s" }}>
+                &ldquo;Maximaal vruuten, zuipen en vapen&rdquo;
               </p>
             </div>
 
             {/* Countdown */}
-            <div className="w-full rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-slate-800/80 to-slate-900/80 p-5 text-center shadow-xl shadow-amber-500/5">
+            <div className="relative w-full overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-slate-800/80 to-slate-900/80 p-5 text-center shadow-xl shadow-amber-500/5">
+              <div className="absolute inset-0 bg-gradient-to-t from-amber-500/5 to-transparent pointer-events-none" />
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400/60">
                 ⏳ Countdown
               </p>
-              <p className="mt-2 text-6xl font-black text-amber-400" style={{ textShadow: "0 0 30px rgba(245, 158, 11, 0.4)" }}>
+              <p className="mt-2 text-6xl font-black text-amber-400 animate-pulse" style={{ textShadow: "0 0 30px rgba(245, 158, 11, 0.5), 0 0 60px rgba(245, 158, 11, 0.2)", animationDuration: "3s" }}>
                 {daysUntil}
               </p>
               <p className="mt-1 text-base font-bold text-white/90">
                 {daysUntil === 1 ? "dag" : "dagen"} te gaan
               </p>
-              <div className="mx-auto mt-3 h-px w-2/3 bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+              <div className="mx-auto mt-3 h-px w-2/3 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
               <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-400">
                 <span>🛫 12 mei</span>
-                <span className="text-amber-500">→</span>
+                <span className="text-amber-400 animate-pulse">→</span>
                 <span>🛬 19 mei</span>
               </div>
               <p className="mt-1 text-[10px] text-gray-600">
@@ -257,9 +258,9 @@ export default function DashboardClient({
                 ].map((player) => (
                   <div
                     key={player.name}
-                    className={`rounded-xl border px-2 py-3 flex flex-col items-center justify-center text-center gap-1 transition ${
+                    className={`rounded-xl border px-2 py-3 flex flex-col items-center justify-center text-center gap-1 transition-all duration-300 hover:scale-105 ${
                       player.name === user.name
-                        ? "border-amber-500/50 bg-gradient-to-b from-amber-500/10 to-transparent shadow-md shadow-amber-500/5"
+                        ? "border-amber-500/50 bg-gradient-to-b from-amber-500/15 to-transparent shadow-lg shadow-amber-500/10"
                         : "border-slate-700/60 bg-slate-800/40"
                     }`}
                   >
@@ -273,12 +274,13 @@ export default function DashboardClient({
             </div>
 
             {/* Teaser */}
-            <div className="mt-5 w-full rounded-2xl border border-dashed border-amber-500/20 bg-slate-800/30 px-4 py-4 text-center">
+            <div className="relative mt-5 w-full overflow-hidden rounded-2xl border border-dashed border-amber-500/20 bg-slate-800/30 px-4 py-4 text-center">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-500/5 to-transparent animate-pulse pointer-events-none" style={{ animationDuration: "5s" }} />
               <p className="text-base">🤫</p>
-              <p className="mt-1 text-xs font-medium text-gray-400">
+              <p className="mt-1 text-xs font-medium text-gray-300 italic">
                 Prepare for takeoff, more to come...
               </p>
-              <p className="mt-1 text-[10px] text-gray-600 italic">
+              <p className="mt-1 text-[10px] text-amber-500/50 italic">
                 Bereid je goed voor — meer info volgt op 12 mei.
               </p>
             </div>
