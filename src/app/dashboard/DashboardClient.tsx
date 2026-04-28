@@ -239,35 +239,24 @@ export default function DashboardClient({
               <p className="mb-2 text-center text-xs font-bold uppercase tracking-widest text-gray-500">
                 ✈️ Passagiers
               </p>
-              <div className="grid w-full grid-cols-2 gap-3">
+              <div className="grid w-full grid-cols-4 gap-2">
                 {[
-                  { name: "Lander", emoji: "💅", title: "Den Chille", quote: "Rustig aan mannen..." },
-                  { name: "Berten", emoji: "💋", title: "De Stansen", quote: "Oei wa ist da!" },
-                  { name: "Dries", emoji: "👠", title: "Den Dransen", quote: "Komaan jongens!" },
-                  { name: "Anton", emoji: "💄", title: "Game Master", quote: "Ik beslis hier 👑" },
+                  { name: "Lander", emoji: "💅" },
+                  { name: "Berten", emoji: "💋" },
+                  { name: "Dries", emoji: "👠" },
+                  { name: "Anton", emoji: "💄" },
                 ].map((player) => (
                   <div
                     key={player.name}
-                    className={`relative overflow-hidden rounded-xl border p-4 ${
+                    className={`rounded-xl border px-2 py-3 text-center ${
                       player.name === user.name
-                        ? "border-amber-500/60 bg-gradient-to-br from-amber-500/15 to-amber-900/10 shadow-lg shadow-amber-500/10"
+                        ? "border-amber-500/60 bg-amber-500/10"
                         : "border-slate-700/80 bg-slate-800/60"
                     }`}
                   >
-                    {player.name === user.name && (
-                      <div className="absolute right-2 top-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
-                        GIJ
-                      </div>
-                    )}
-                    <p className="text-2xl">{player.emoji}</p>
-                    <p className={`mt-1 text-sm font-extrabold ${player.name === user.name ? "text-amber-400" : "text-white"}`}>
+                    <p className="text-xl">{player.emoji}</p>
+                    <p className={`mt-1 text-xs font-bold ${player.name === user.name ? "text-amber-400" : "text-gray-300"}`}>
                       {player.name}
-                    </p>
-                    <p className="text-[10px] font-medium text-gray-500">
-                      {player.title}
-                    </p>
-                    <p className="mt-1 text-[10px] italic text-gray-600">
-                      &quot;{player.quote}&quot;
                     </p>
                   </div>
                 ))}
