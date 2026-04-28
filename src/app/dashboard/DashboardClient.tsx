@@ -216,7 +216,7 @@ export default function DashboardClient({
                 TENERIFE
               </h2>
               <p className="text-2xl font-black text-amber-400">2026</p>
-              <p className="mt-2 text-sm font-semibold text-amber-200/70">
+              <p className="mt-2 text-sm font-bold uppercase tracking-[0.15em] bg-gradient-to-r from-amber-400 via-orange-300 to-amber-400 bg-clip-text text-transparent">
                 Maximaal vruuten, zuipen en vapen
               </p>
             </div>
