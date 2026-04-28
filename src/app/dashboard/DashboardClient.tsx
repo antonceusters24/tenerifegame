@@ -154,8 +154,8 @@ export default function DashboardClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4">
-      <RandomImage />
-      <EasterEggs />
+      {gameStatus === "active" && <RandomImage />}
+      {gameStatus === "active" && <EasterEggs />}
       <div className="relative z-10 mx-auto max-w-lg">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
@@ -201,16 +201,58 @@ export default function DashboardClient({
 
         {/* Before game */}
         {gameStatus === "before" && (
-          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-8 text-center backdrop-blur">
-            <p className="mb-2 text-6xl">🌴</p>
-            <h2 className="mb-2 text-2xl font-extrabold text-white">
-              Nog {daysUntil} dagen!
-            </h2>
-            <p className="text-gray-400">
-              De challenges starten op 13 mei. Maak u klaar mannen!
-            </p>
-            <p className="mt-2 text-xs text-gray-500">
-              {GAME_DATES[0]} → {GAME_DATES[GAME_DATES.length - 1]}
+          <div className="flex flex-col items-center pt-8">
+            <div className="mb-8 text-center">
+              <p className="text-8xl">🏝️</p>
+              <h2 className="mt-4 text-4xl font-black text-white">
+                TENERIFE 2026
+              </h2>
+              <p className="mt-2 text-lg text-amber-400 font-bold">
+                De Mannen Challenge
+              </p>
+            </div>
+
+            <div className="w-full rounded-2xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 to-transparent p-6 text-center backdrop-blur">
+              <p className="text-sm font-medium uppercase tracking-wider text-gray-400">
+                Countdown
+              </p>
+              <p className="mt-2 text-6xl font-black text-amber-400">
+                {daysUntil}
+              </p>
+              <p className="mt-1 text-lg font-bold text-white">
+                {daysUntil === 1 ? "dag" : "dagen"} te gaan
+              </p>
+              <div className="mt-4 h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent" />
+              <p className="mt-4 text-sm text-gray-400">
+                🗓️ 13 mei → 18 mei
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                6 dagen challenges, 4 legends, 1 winnaar
+              </p>
+            </div>
+
+            <div className="mt-6 grid w-full grid-cols-4 gap-2">
+              {["Lander", "Berten", "Dries", "Anton"].map((name) => (
+                <div
+                  key={name}
+                  className={`rounded-xl border p-3 text-center ${
+                    name === user.name
+                      ? "border-amber-500/50 bg-amber-500/10"
+                      : "border-slate-700 bg-slate-800/60"
+                  }`}
+                >
+                  <p className="text-lg">
+                    {name === "Lander" ? "💅" : name === "Berten" ? "💋" : name === "Dries" ? "👠" : "💄"}
+                  </p>
+                  <p className={`mt-1 text-xs font-bold ${name === user.name ? "text-amber-400" : "text-gray-400"}`}>
+                    {name}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-6 text-center text-xs text-gray-600">
+              Verander uw PIN via het 🔒 icoontje als ge da nog nie gedaan hebt
             </p>
           </div>
         )}
