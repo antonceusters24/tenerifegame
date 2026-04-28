@@ -1,0 +1,439 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { User, Assignment, PendingConfirmation } from "@/lib/types";
+import {
+  getGameStatus,
+  getCurrentDay,
+  getDaysUntilStart,
+  GAME_DATES,
+} from "@/lib/game";
+import {
+  completeChallenge,
+  skipChallenge,
+  requestNewChallenge,
+  confirmChallenge,
+  rejectChallenge,
+  logout,
+} from "../actions";
+import Link from "next/link";
+import RandomImage from "@/components/RandomImage";
+import ChallengeReveal from "@/components/ChallengeReveal";
+import EasterEggs from "@/components/EasterEggs";
+
+const DAY_NAMES = [
+  { name: "De oepwarming", emoji: "🔥", subtitle: "Alleman fris en fruitig, zuipeeee" },
+  { name: "Den doorzetter", emoji: "💪", subtitle: "Vandaag wordt het nog steviger eh mannen" },
+  { name: "Den halve", emoji: "⚡", subtitle: "Zen al wijt halverwege, tandje bijsteken nouw" },
+  { name: "Afzien", emoji: "🥵", subtitle: "Hier worden de grote mannen van de kleine jongens gescheiden" },
+  { name: "De Climax", emoji: "🏔️", subtitle: "Gisteren was niks, vandaag gaat het los" },
+  { name: "Het finaal gevecht", emoji: "👑", subtitle: "Laatste kans om u te bewijzen, legend" },
+];
+
+function DayTracker({ day }: { day: number }) {
+  const info = DAY_NAMES[day - 1] || DAY_NAMES[0];
+  const progress = (day / 6) * 100;
+
+  return (
+    <div className="mb-4 rounded-xl border border-amber-500/20 bg-slate-800/60 px-4 py-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs font-medium text-gray-400">Dag {day} van 6</span>
+        <span className="text-xs text-gray-500">nog {6 - day} te gaan</span>
+      </div>
+      <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-700">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="text-center">
+        <span className="text-lg font-bold text-amber-400">
+          {info.emoji} {info.name}
+        </span>
+        <p className="mt-0.5 text-xs italic text-gray-400">&ldquo;{info.subtitle}&rdquo;</p>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardClient({
+  user,
+  assignments: initial,
+  pendingConfirmations: initialPending,
+}: {
+  user: User;
+  assignments: Assignment[];
+  pendingConfirmations: PendingConfirmation[];
+}) {
+  const [assignments, setAssignments] = useState(initial);
+  const [pending, setPending] = useState(initialPending);
+  const [loading, setLoading] = useState<string | null>(null);
+  const [showReveal, setShowReveal] = useState(false);
+  const [revealAnim, setRevealAnim] = useState(0);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const gameStatus = getGameStatus();
+  const currentDay = getCurrentDay();
+  const daysUntil = getDaysUntilStart();
+
+  const active = assignments.filter((a) => a.status === "active");
+  const pendingOwn = assignments.filter((a) => a.status === "pending");
+  const completed = assignments.filter((a) => a.status === "completed");
+  const skipped = assignments.filter((a) => a.status === "skipped");
+
+  async function handleComplete(id: string) {
+    setLoading(id);
+    const res = await completeChallenge(id);
+    if (!("error" in res)) {
+      const newStatus = user.name === "Anton" ? "completed" : "pending";
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === id ? { ...a, status: newStatus as "completed" | "pending" } : a
+        )
+      );
+    }
+    setLoading(null);
+  }
+
+  async function handleSkip(id: string) {
+    if (!confirm("Skippen? Da kost u 10 punten, lafaard!")) return;
+    setLoading(id);
+    const res = await skipChallenge(id);
+    if (!("error" in res)) {
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === id ? { ...a, status: "skipped" as const } : a
+        )
+      );
+    }
+    setLoading(null);
+  }
+
+  async function handleRequestNew() {
+    const day = currentDay || 1;
+    setLoading("new");
+    // Pick a random animation type
+    setRevealAnim(Math.floor(Math.random() * 10));
+    // Start the animation
+    setShowReveal(true);
+    // Request the challenge in the background
+    await requestNewChallenge(day);
+  }
+
+  const handleRevealComplete = useCallback(() => {
+    setShowReveal(false);
+    setLoading(null);
+    window.location.reload();
+  }, []);
+
+  async function handleConfirm(id: string) {
+    setLoading(id);
+    const res = await confirmChallenge(id);
+    if (!("error" in res)) {
+      setPending((prev) => prev.filter((p) => p.id !== id));
+    } else if ("error" in res) {
+      alert(res.error);
+    }
+    setLoading(null);
+  }
+
+  async function handleReject(id: string) {
+    setLoading(id);
+    const res = await rejectChallenge(id);
+    if (!("error" in res)) {
+      setPending((prev) => prev.filter((p) => p.id !== id));
+    }
+    setLoading(null);
+  }
+
+  const difficultyColor = {
+    easy: "bg-emerald-900/50 text-emerald-300",
+    medium: "bg-amber-900/50 text-amber-300",
+    hard: "bg-red-900/50 text-red-300",
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4">
+      <RandomImage />
+      <EasterEggs />
+      <div className="relative z-10 mx-auto max-w-lg">
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <h1 className="text-2xl font-extrabold text-white">
+            🍺 {user.name}
+          </h1>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/gallery"
+              className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+            >
+              📸
+            </Link>
+            <Link
+              href="/scoreboard"
+              className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+            >
+              🏆 Scores
+            </Link>
+            {(completed.length > 0 || skipped.length > 0) && (
+              <button
+                onClick={() => setShowHistory((h) => !h)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                  showHistory
+                    ? "bg-amber-500 text-black"
+                    : "bg-slate-700/50 text-amber-400 hover:bg-slate-700"
+                }`}
+              >
+                📜 {completed.length + skipped.length}
+              </button>
+            )}
+            <form action={logout}>
+              <button className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700" title="Logout">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Before game */}
+        {gameStatus === "before" && (
+          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-8 text-center backdrop-blur">
+            <p className="mb-2 text-6xl">🌴</p>
+            <h2 className="mb-2 text-2xl font-extrabold text-white">
+              Nog {daysUntil} dagen!
+            </h2>
+            <p className="text-gray-400">
+              De challenges starten op 13 mei. Maak u klaar mannen!
+            </p>
+            <p className="mt-2 text-xs text-gray-500">
+              {GAME_DATES[0]} → {GAME_DATES[GAME_DATES.length - 1]}
+            </p>
+          </div>
+        )}
+
+        {/* After game */}
+        {gameStatus === "after" && (
+          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-8 text-center backdrop-blur">
+            <p className="mb-2 text-6xl">🏆</p>
+            <h2 className="mb-2 text-2xl font-extrabold text-white">
+              Game Gedaan!
+            </h2>
+            <p className="text-gray-400">
+              Wa ne reis mannen! Check de finale scores.
+            </p>
+            <Link
+              href="/scoreboard"
+              className="mt-4 inline-block rounded-lg bg-amber-500 px-6 py-2 font-bold text-black transition hover:bg-amber-400"
+            >
+              🏆 Eindklassement
+            </Link>
+          </div>
+        )}
+
+        {/* During game */}
+        {gameStatus === "active" && currentDay && (
+          <>
+            <DayTracker day={currentDay} />
+
+            {/* Peer Confirmations - only Anton sees this */}
+            {user.name === "Anton" && pending.length > 0 && (
+              <div className="mb-6">
+                <h2 className="mb-3 text-lg font-bold text-amber-400">
+                  👑 Bevestig Deze (Anton)
+                </h2>
+                <div className="space-y-2">
+                  {pending.map((p) => (
+                    <div
+                      key={p.id}
+                      className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 backdrop-blur"
+                    >
+                      <div className="mb-2">
+                        <span className="text-xs text-amber-300">
+                          {p.users?.name} zegt:
+                        </span>
+                        <p className="font-semibold text-white">
+                          {p.challenges?.title}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {p.challenges?.description}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleConfirm(p.id)}
+                          disabled={loading === p.id}
+                          className="flex-1 rounded-lg bg-emerald-600 py-1.5 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                        >
+                          ✅ Klopt
+                        </button>
+                        <button
+                          onClick={() => handleReject(p.id)}
+                          disabled={loading === p.id}
+                          className="flex-1 rounded-lg bg-red-600/80 py-1.5 text-sm font-bold text-white transition hover:bg-red-500 disabled:opacity-50"
+                        >
+                          ❌ Gelansen
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Active Challenges - rendered in bottom bar outside this container */}
+          </>
+        )}
+
+        {/* History panel (toggled) */}
+        {showHistory && (completed.length > 0 || skipped.length > 0) && (
+          <div className="mb-6 rounded-xl border border-slate-700 bg-slate-800/80 p-4 backdrop-blur">
+            {completed.length > 0 && (
+              <div className="mb-4">
+                <h2 className="mb-2 text-sm font-bold text-emerald-400">
+                  ✅ Gedaan ({completed.length})
+                </h2>
+                <div className="space-y-1.5">
+                  {completed.map((a) => (
+                    <div
+                      key={a.id}
+                      className="rounded-lg bg-emerald-500/10 px-3 py-2"
+                    >
+                      <span className="text-xs text-emerald-300">
+                        Dag {a.day} · +{a.challenges?.points}pts
+                      </span>
+                      <p className="text-sm font-medium text-white">
+                        {a.challenges?.title}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {skipped.length > 0 && (
+              <div>
+                <h2 className="mb-2 text-sm font-bold text-red-400">
+                  ❌ Geskipt ({skipped.length})
+                </h2>
+                <div className="space-y-1.5">
+                  {skipped.map((a) => (
+                    <div
+                      key={a.id}
+                      className="rounded-lg bg-red-500/10 px-3 py-2"
+                    >
+                      <span className="text-xs text-red-300">
+                        Dag {a.day} · -10pts
+                      </span>
+                      <p className="text-sm font-medium text-white/50 line-through">
+                        {a.challenges?.title}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom bar - active challenges */}
+      {gameStatus === "active" && currentDay && (
+        <>
+          {active.length === 0 && pendingOwn.length === 0 ? (
+            <div
+              className="border-t border-slate-700 bg-slate-900 p-4 text-center"
+              style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+            >
+              <button
+                onClick={handleRequestNew}
+                disabled={loading === "new"}
+                className="w-full max-w-lg rounded-xl bg-amber-500 py-3.5 text-lg font-bold text-black transition hover:bg-amber-400 active:scale-95 disabled:opacity-50"
+              >
+                {loading === "new" ? "Laden..." : "🎲 Fiks nieuwe challenge"}
+              </button>
+            </div>
+          ) : (
+            <div
+              className="border-t border-slate-700 bg-slate-900 px-4 pt-3"
+              style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+            >
+              <div className="mx-auto max-w-lg space-y-3">
+                {active.map((a) => (
+                  <div
+                    key={a.id}
+                    className="rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-lg"
+                  >
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-bold text-amber-400">
+                        {a.challenges?.categories?.name || "Challenge"}
+                      </span>
+                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-400">
+                        +{a.challenges?.points}pts
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-extrabold text-white">
+                      {a.challenges?.title}
+                    </h3>
+                    {a.target_player_name && (
+                      <p className="mt-0.5 text-sm font-semibold text-orange-400">
+                        🎯 Op: {a.target_player_name}
+                      </p>
+                    )}
+                    {a.challenges?.description && (
+                      <p className="mt-1 text-sm text-gray-400">
+                        {a.challenges.description}
+                      </p>
+                    )}
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => handleComplete(a.id)}
+                        disabled={loading === a.id}
+                        className="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                      >
+                        ✅ Gedaan!
+                      </button>
+                      <button
+                        onClick={() => handleSkip(a.id)}
+                        disabled={loading === a.id}
+                        className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/30 disabled:opacity-50"
+                      >
+                        Skip (-10)
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {pendingOwn.map((a) => (
+                  <div
+                    key={a.id}
+                    className="rounded-xl border border-amber-500/30 bg-slate-800/60 p-4 opacity-80"
+                  >
+                    <span className="text-xs font-medium text-amber-400">
+                      ⏳ Wachten op bevestiging van Anton
+                    </span>
+                    <h3 className="font-bold text-white">
+                      {a.challenges?.title}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      +{a.challenges?.points}pts na bevestiging
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {showReveal && (
+        <ChallengeReveal
+          onComplete={handleRevealComplete}
+          animationType={revealAnim}
+        />
+      )}
+    </div>
+  );
+}
