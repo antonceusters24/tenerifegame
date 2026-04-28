@@ -239,25 +239,28 @@ export default function DashboardClient({
               <p className="mb-2 text-center text-xs font-bold uppercase tracking-widest text-gray-500">
                 ✈️ Passagiers
               </p>
-              <div className="grid w-full grid-cols-4 gap-2">
+              <div className="grid w-full grid-cols-2 gap-2">
                 {[
-                  { name: "Lander", emoji: "💅" },
-                  { name: "Berten", emoji: "💋" },
-                  { name: "Dries", emoji: "👠" },
-                  { name: "Anton", emoji: "💄" },
+                  { name: "Lander", emoji: "💅", title: "Landerke Panterke" },
+                  { name: "Berten", emoji: "💋", title: "De Saffer" },
+                  { name: "Dries", emoji: "👠", title: "Meau aanbidder" },
+                  { name: "Anton", emoji: "💄", title: "Mr Turkish Airlines" },
                 ].map((player) => (
                   <div
                     key={player.name}
-                    className={`rounded-xl border px-2 py-3 text-center ${
+                    className={`rounded-xl border px-3 py-2.5 flex items-center gap-2 ${
                       player.name === user.name
                         ? "border-amber-500/60 bg-amber-500/10"
                         : "border-slate-700/80 bg-slate-800/60"
                     }`}
                   >
-                    <p className="text-xl">{player.emoji}</p>
-                    <p className={`mt-1 text-xs font-bold ${player.name === user.name ? "text-amber-400" : "text-gray-300"}`}>
-                      {player.name}
-                    </p>
+                    <p className="text-lg">{player.emoji}</p>
+                    <div>
+                      <p className={`text-xs font-bold ${player.name === user.name ? "text-amber-400" : "text-gray-300"}`}>
+                        {player.name}
+                      </p>
+                      <p className="text-[10px] text-gray-500">{player.title}</p>
+                    </div>
                   </div>
                 ))}
               </div>

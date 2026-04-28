@@ -83,11 +83,11 @@ export default function LoginClient() {
             required
             className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2.5 text-white focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
-            <option value="">Kies uwen naam, legend...</option>
-            <option value="Lander">Lander 💅</option>
-            <option value="Berten">Berten 💋</option>
-            <option value="Dries">Dries 👠</option>
-            <option value="Anton">Anton 💄</option>
+            <option value="">Kiest uwen naam</option>
+            <option value="Lander">Lander</option>
+            <option value="Berten">Berten</option>
+            <option value="Dries">Dries</option>
+            <option value="Anton">Anton</option>
             <option value="Hanne">Hanne (Admin)</option>
             <option value="Klaas">Klaas (Admin)</option>
           </select>
