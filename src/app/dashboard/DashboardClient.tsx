@@ -241,10 +241,10 @@ export default function DashboardClient({
               </p>
               <div className="grid w-full grid-cols-2 gap-2">
                 {[
-                  { name: "Lander", emoji: "💅", title: "Landerke Panterke" },
-                  { name: "Berten", emoji: "💋", title: "De Saffer" },
-                  { name: "Dries", emoji: "👠", title: "Meau aanbidder" },
-                  { name: "Anton", emoji: "💄", title: "Mr Turkish Airlines" },
+                  { name: "Lander", emoji: "�‍🦲", title: "Landerke Panterke" },
+                  { name: "Berten", emoji: "🚬", title: "De Saffer" },
+                  { name: "Dries", emoji: "🍆", title: "Meau aanbidder" },
+                  { name: "Anton", emoji: "✈️", title: "Mr Turkish Airlines" },
                 ].map((player) => (
                   <div
                     key={player.name}
