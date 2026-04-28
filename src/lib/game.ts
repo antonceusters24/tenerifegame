@@ -7,6 +7,8 @@ export const GAME_DATES = [
   "2026-05-18",
 ];
 
+export const TRIP_START = "2026-05-12";
+
 export function getLocalDateString(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -26,7 +28,7 @@ export function getGameStatus(): "before" | "active" | "after" {
 }
 
 export function getDaysUntilStart(): number {
-  const start = new Date(GAME_DATES[0] + "T00:00:00");
+  const start = new Date(TRIP_START + "T00:00:00");
   const now = new Date();
   return Math.max(
     0,
