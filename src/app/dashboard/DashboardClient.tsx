@@ -257,13 +257,13 @@ export default function DashboardClient({
                 ].map((player) => (
                   <div
                     key={player.name}
-                    className={`rounded-xl border px-3 py-2.5 flex items-center gap-3 transition ${
+                    className={`rounded-xl border px-3 py-2.5 flex flex-col items-center justify-center text-center gap-1 transition ${
                       player.name === user.name
                         ? "border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-transparent shadow-md shadow-amber-500/5"
                         : "border-slate-700/60 bg-slate-800/40"
                     }`}
                   >
-                    <span className="text-xl">{player.emoji}</span>
+                    <span className="text-2xl">{player.emoji}</span>
                     <div>
                       <p className={`text-sm font-bold ${player.name === user.name ? "text-amber-400" : "text-white"}`}>
                         {player.name}
@@ -279,10 +279,10 @@ export default function DashboardClient({
             <div className="mt-6 w-full rounded-2xl border border-dashed border-amber-500/20 bg-slate-800/30 p-4 text-center">
               <p className="text-lg">🤫</p>
               <p className="mt-1 text-xs font-medium text-gray-400">
-                Er staat meer op het spel dan je denkt...
+                Prepare for takeoff, more to come...
               </p>
               <p className="mt-1 text-[10px] text-gray-600 italic">
-                Challenges, straffen & punten — meer info volgt op dag 1.
+                Bereid je goed voor — meer info volgt op 12 mei.
               </p>
             </div>
           </div>
