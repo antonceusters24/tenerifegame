@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { changePin } from "../actions";
-import RandomImage from "@/components/RandomImage";
 
 type User = { id: string; name: string; role: string };
 
@@ -21,7 +20,6 @@ export default function ChangePinClient({ user }: { user: User }) {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4">
-      <RandomImage />
       <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-800/80 p-8 shadow-2xl backdrop-blur">
         <h1 className="mb-1 text-center text-2xl font-extrabold text-white">
           🔐 Kiest auwe PIN

@@ -163,18 +163,22 @@ export default function DashboardClient({
             🍺 {user.name}
           </h1>
           <div className="flex items-center gap-2">
-            <Link
-              href="/gallery"
-              className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
-            >
-              📸
-            </Link>
-            <Link
-              href="/scoreboard"
-              className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
-            >
-              🏆 Scores
-            </Link>
+            {gameStatus === "active" && (
+              <Link
+                href="/gallery"
+                className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+              >
+                📸
+              </Link>
+            )}
+            {gameStatus === "active" && (
+              <Link
+                href="/scoreboard"
+                className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+              >
+                🏆 Scores
+              </Link>
+            )}
             {(completed.length > 0 || skipped.length > 0) && (
               <button
                 onClick={() => setShowHistory((h) => !h)}
@@ -208,7 +212,7 @@ export default function DashboardClient({
                 TENERIFE 2026
               </h2>
               <p className="mt-2 text-lg text-amber-400 font-bold">
-                De Mannen Challenge
+                Maximaal vruuten, zuipen en vapen
               </p>
             </div>
 
@@ -224,10 +228,10 @@ export default function DashboardClient({
               </p>
               <div className="mt-4 h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent" />
               <p className="mt-4 text-sm text-gray-400">
-                🗓️ 13 mei → 18 mei
+                🗓️ 12 mei → 19 mei
               </p>
               <p className="mt-1 text-xs text-gray-500">
-                6 dagen challenges, 4 legends, 1 winnaar
+                 7 dagen vermaak, 1 winnaar
               </p>
             </div>
 
@@ -250,10 +254,6 @@ export default function DashboardClient({
                 </div>
               ))}
             </div>
-
-            <p className="mt-6 text-center text-xs text-gray-600">
-              Verander uw PIN via het 🔒 icoontje als ge da nog nie gedaan hebt
-            </p>
           </div>
         )}
 
