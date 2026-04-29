@@ -1,11 +1,11 @@
 ﻿"use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { User, Assignment, PendingConfirmation } from "@/lib/types";
 import {
   getGameStatus,
   getCurrentDay,
-  getDaysUntilStart,
+  ACTIVATION_TIME,
   GAME_DATES,
 } from "@/lib/game";
 import {
@@ -71,10 +71,26 @@ export default function DashboardClient({
   const [showReveal, setShowReveal] = useState(false);
   const [revealAnim, setRevealAnim] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   const gameStatus = getGameStatus();
   const currentDay = getCurrentDay();
-  const daysUntil = getDaysUntilStart();
+
+  useEffect(() => {
+    function update() {
+      const target = new Date(ACTIVATION_TIME).getTime();
+      const now = Date.now();
+      const diff = Math.max(0, target - now);
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setCountdown({ days, hours, minutes, seconds });
+    }
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const active = assignments.filter((a) => a.status === "active");
   const pendingOwn = assignments.filter((a) => a.status === "pending");
@@ -227,12 +243,23 @@ export default function DashboardClient({
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400/60">
                 ⏳ Countdown
               </p>
-              <p className="mt-2 text-6xl font-black text-amber-400 animate-pulse" style={{ textShadow: "0 0 30px rgba(245, 158, 11, 0.5), 0 0 60px rgba(245, 158, 11, 0.2)", animationDuration: "3s" }}>
-                {daysUntil}
-              </p>
-              <p className="mt-1 text-base font-bold text-white/90">
-                {daysUntil === 1 ? "dag" : "dagen"} te gaan
-              </p>
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {[
+                  { value: countdown.days, label: "dagen" },
+                  { value: countdown.hours, label: "uren" },
+                  { value: countdown.minutes, label: "min" },
+                  { value: countdown.seconds, label: "sec" },
+                ].map((unit) => (
+                  <div key={unit.label} className="flex flex-col items-center">
+                    <span className="text-3xl font-black text-amber-400 tabular-nums" style={{ textShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>
+                      {String(unit.value).padStart(2, "0")}
+                    </span>
+                    <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-gray-500">
+                      {unit.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
               <div className="mx-auto mt-3 h-px w-2/3 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
               <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-400">
                 <span>🛫 12 mei</span>

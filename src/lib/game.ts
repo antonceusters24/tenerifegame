@@ -11,11 +11,15 @@ export const TRIP_START = "2026-05-12";
 
 // May 12 at 18:00 Tenerife (WEST = UTC+1) = 17:00 UTC
 // This is when the app goes "active" and countdown ends
-const ACTIVATION_TIME = "2026-05-12T17:00:00Z";
+export const ACTIVATION_TIME = "2026-05-12T17:00:00Z";
 
 // May 13 at 09:00 Tenerife (WEST = UTC+1) = 08:00 UTC
 // This is when challenges become available
 const CHALLENGES_START = "2026-05-13T08:00:00Z";
+
+// May 19 at 00:00 Tenerife (WEST = UTC+1) = 23:00 UTC on May 18
+// This is when the game ends
+const GAME_END = "2026-05-18T23:00:00Z";
 
 export function getLocalDateString(): string {
   const now = new Date();
@@ -33,8 +37,7 @@ export function getCurrentDay(): number | null {
 export function getGameStatus(): "before" | "active" | "after" {
   const now = new Date();
   if (now < new Date(ACTIVATION_TIME)) return "before";
-  const today = getLocalDateString();
-  if (today > GAME_DATES[GAME_DATES.length - 1]) return "after";
+  if (now >= new Date(GAME_END)) return "after";
   return "active";
 }
 
