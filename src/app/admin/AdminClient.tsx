@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { User, Category } from "@/lib/types";
 import { addChallenge, deleteChallenge, logout } from "../actions";
-import Link from "next/link";
 
 type ChallengeWithCat = {
   id: string;
@@ -70,29 +69,15 @@ export default function AdminClient({
           <h1 className="shrink-0 text-2xl font-extrabold text-white">
             ⚙️ Admin
           </h1>
-          <div className="flex items-center gap-1.5 flex-wrap justify-end">
-            <Link
-              href="/gallery"
-              className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
-            >
-              📸
-            </Link>
-            <Link
-              href="/scoreboard"
-              className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
-            >
-              🏆
-            </Link>
-            <form action={logout}>
-              <button className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700" title="Logout">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </button>
-            </form>
-          </div>
+          <form action={logout}>
+            <button className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700" title="Logout">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </button>
+          </form>
         </div>
 
         {/* Info */}
