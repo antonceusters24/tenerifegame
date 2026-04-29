@@ -33,7 +33,7 @@ export async function login(formData: FormData) {
   const supabase = await createClient();
   const { data: user, error } = await supabase
     .from("users")
-    .select("id, name, role, pin_changed")
+    .select("id, name, role, pin_changed, emoji")
     .eq("name", name)
     .eq("pin", pin)
     .single();
@@ -76,7 +76,7 @@ export async function getCurrentUser() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("users")
-    .select("id, name, role, pin_changed")
+    .select("id, name, role, pin_changed, emoji")
     .eq("id", userId)
     .single();
 
@@ -111,6 +111,23 @@ export async function changePin(formData: FormData) {
   } else {
     redirect("/dashboard");
   }
+}
+
+export async function updateEmoji(emoji: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not logged in" };
+
+  // Basic validation - must be 1-4 characters (emoji can be multi-codepoint)
+  if (!emoji || emoji.length > 8) return { error: "Invalid emoji" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("users")
+    .update({ emoji })
+    .eq("id", user.id);
+
+  if (error) return { error: "Failed to update emoji" };
+  return { success: true };
 }
 
 // Player marks challenge as done → goes to "pending" (needs Anton's confirmation)

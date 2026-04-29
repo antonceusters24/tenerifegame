@@ -3,6 +3,7 @@ export type User = {
   name: string;
   role: "player" | "admin";
   pin_changed: boolean;
+  emoji: string;
 };
 
 export type Category = {

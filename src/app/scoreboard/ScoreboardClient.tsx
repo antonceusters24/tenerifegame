@@ -30,11 +30,13 @@ export default function ScoreboardClient({
   entries,
   allAssignments,
   cfScores: initialCF,
+  emojiMap,
 }: {
   user: User;
   entries: ScoreboardEntry[];
   allAssignments: AssignmentDetail[];
   cfScores: CFScore[];
+  emojiMap: Record<string, string>;
 }) {
   const [tab, setTab] = useState<"challenge" | "chinese">("challenge");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -152,7 +154,7 @@ export default function ScoreboardClient({
                         </span>
                         <div>
                           <p className="text-lg font-extrabold text-white">
-                            {entry.name}
+                            {emojiMap[entry.name] || "🎮"} {entry.name}
                             {entry.name === user.name && (
                               <span className="ml-2 text-xs font-normal text-gray-500">
                                 (gij)
@@ -287,7 +289,7 @@ export default function ScoreboardClient({
                         <div className="flex items-center gap-3">
                           <div>
                             <p className="text-lg font-extrabold text-white">
-                              {player.player_name}
+                              {emojiMap[player.player_name] || "🎮"} {player.player_name}
                               {player.player_name === user.name && (
                                 <span className="ml-2 text-xs font-normal text-gray-500">(gij)</span>
                               )}

@@ -27,6 +27,13 @@ export default async function DashboardPage() {
     .eq("status", "pending")
     .neq("user_id", user.id);
 
+  // All players with their emojis
+  const { data: players } = await supabase
+    .from("users")
+    .select("name, emoji")
+    .eq("role", "player")
+    .order("name");
+
   return (
     <DashboardClient
       user={user}
@@ -34,6 +41,7 @@ export default async function DashboardPage() {
       pendingConfirmations={
         (pendingConfirmations as unknown as PendingConfirmation[]) || []
       }
+      players={players || []}
     />
   );
 }

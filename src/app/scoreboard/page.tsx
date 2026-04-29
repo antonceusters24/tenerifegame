@@ -22,7 +22,15 @@ export default async function ScoreboardPage() {
     .from("chinese_fucking_scores")
     .select("*");
 
+  // All players with their emojis
+  const { data: players } = await supabase
+    .from("users")
+    .select("name, emoji")
+    .eq("role", "player");
+
   const entries = (scores as ScoreboardEntry[]) || [];
+  const emojiMap: Record<string, string> = {};
+  (players || []).forEach((p) => { emojiMap[p.name] = p.emoji || "🎮"; });
 
   return (
     <ScoreboardClient
@@ -30,6 +38,7 @@ export default async function ScoreboardPage() {
       entries={entries}
       allAssignments={allAssignments || []}
       cfScores={cfScores || []}
+      emojiMap={emojiMap}
     />
   );
 }

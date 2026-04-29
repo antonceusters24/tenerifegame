@@ -15,6 +15,7 @@ import {
   confirmChallenge,
   rejectChallenge,
   logout,
+  updateEmoji,
 } from "../actions";
 import Link from "next/link";
 import RandomImage from "@/components/RandomImage";
@@ -60,14 +61,18 @@ export default function DashboardClient({
   user,
   assignments: initial,
   pendingConfirmations: initialPending,
+  players: initialPlayers,
 }: {
   user: User;
   assignments: Assignment[];
   pendingConfirmations: PendingConfirmation[];
+  players: { name: string; emoji: string }[];
 }) {
   const [assignments, setAssignments] = useState(initial);
   const [pending, setPending] = useState(initialPending);
+  const [players, setPlayers] = useState(initialPlayers);
   const [loading, setLoading] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
   const [revealAnim, setRevealAnim] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
@@ -168,6 +173,17 @@ export default function DashboardClient({
     hard: "bg-red-900/50 text-red-300",
   };
 
+  const EMOJI_OPTIONS = ["🥚", "🐆", "🚬", "🍆", "🍺", "🔥", "💀", "🎯", "👑", "🦈", "🐒", "🌴", "🎲", "💣", "🧨", "🍻", "🥃", "🏖️", "☀️", "🤙", "😎", "🤯", "🫡", "💪"];
+
+  async function handleEmojiChange(emoji: string) {
+    setShowEmojiPicker(false);
+    const res = await updateEmoji(emoji);
+    if (!("error" in res)) {
+      user.emoji = emoji;
+      setPlayers((prev) => prev.map((p) => p.name === user.name ? { ...p, emoji } : p));
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4">
       {gameStatus === "active" && <RandomImage />}
@@ -175,8 +191,11 @@ export default function DashboardClient({
       <div className="relative z-10 mx-auto max-w-lg">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between gap-2">
-          <h1 className="shrink-0 text-2xl font-extrabold text-white">
-            🍺 {user.name}
+          <h1 className="shrink-0 text-2xl font-extrabold text-white flex items-center gap-1">
+            <button onClick={() => setShowEmojiPicker(true)} className="hover:scale-110 transition" title="Verander je emoji">
+              {user.emoji || "🎮"}
+            </button>{" "}
+            {user.name}
           </h1>
           <div className="flex items-center gap-1.5 flex-wrap justify-end">
             {gameStatus === "active" && (
@@ -277,12 +296,7 @@ export default function DashboardClient({
                 ✈️ Crew
               </p>
               <div className="grid w-full grid-cols-4 gap-2">
-                {[
-                  { name: "Lander", emoji: "🐆", title: "Landerke Panterke" },
-                  { name: "Berten", emoji: "🚬", title: "De Saffer" },
-                  { name: "Dries", emoji: "🍆", title: "Meau aanbidder" },
-                  { name: "Anton", emoji: "🥚", title: "Mr Turkish Airlines" },
-                ].map((player) => (
+                {players.map((player) => (
                   <div
                     key={player.name}
                     className={`rounded-xl border px-2 py-3 flex flex-col items-center justify-center text-center gap-1 transition-all duration-300 hover:scale-105 ${
@@ -291,7 +305,7 @@ export default function DashboardClient({
                         : "border-slate-700/60 bg-slate-800/40"
                     }`}
                   >
-                    <span className="text-2xl">{player.emoji}</span>
+                    <span className="text-2xl">{player.emoji || "🎮"}</span>
                     <p className={`text-xs font-bold ${player.name === user.name ? "text-amber-400" : "text-white"}`}>
                       {player.name}
                     </p>
@@ -548,6 +562,34 @@ export default function DashboardClient({
           onComplete={handleRevealComplete}
           animationType={revealAnim}
         />
+      )}
+
+      {/* Emoji Picker Modal */}
+      {showEmojiPicker && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onClick={() => setShowEmojiPicker(false)}>
+          <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-3 text-center text-lg font-bold text-white">Kies je emoji</h3>
+            <div className="grid grid-cols-6 gap-2">
+              {EMOJI_OPTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleEmojiChange(emoji)}
+                  className={`rounded-xl p-2 text-2xl transition hover:scale-110 hover:bg-slate-700 ${
+                    emoji === user.emoji ? "bg-amber-500/20 ring-2 ring-amber-500" : ""
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowEmojiPicker(false)}
+              className="mt-4 w-full rounded-lg bg-slate-700 py-2 text-sm font-medium text-gray-300 transition hover:bg-slate-600"
+            >
+              Annuleer
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
