@@ -84,10 +84,8 @@ export default function DashboardClient({
   const [uploading, setUploading] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<{ name: string; url: string } | null>(null);
 
-  // TODO: Remove Anton override after testing
-  const isTestUser = user.name === "Anton";
-  const gameStatus = isTestUser ? "active" : getGameStatus();
-  const currentDay = isTestUser ? (getCurrentDay() || 1) : getCurrentDay();
+  const gameStatus = getGameStatus();
+  const currentDay = getCurrentDay();
 
   useEffect(() => {
     function update() {
