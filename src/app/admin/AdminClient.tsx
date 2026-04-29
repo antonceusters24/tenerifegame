@@ -66,26 +66,30 @@ export default function AdminClient({
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4">
       <div className="mx-auto max-w-2xl">
         {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold text-white">
-            ⚙️ Admin — {user.name}
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h1 className="shrink-0 text-2xl font-extrabold text-white">
+            ⚙️ Admin
           </h1>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
             <Link
               href="/gallery"
-              className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+              className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
             >
               📸
             </Link>
             <Link
               href="/scoreboard"
-              className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+              className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
             >
-              🏆 Scores
+              🏆
             </Link>
             <form action={logout}>
-              <button className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-gray-400 transition hover:bg-slate-700">
-                Logout
+              <button className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700" title="Logout">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
               </button>
             </form>
           </div>
