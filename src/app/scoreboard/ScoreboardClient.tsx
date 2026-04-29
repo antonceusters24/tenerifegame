@@ -31,18 +31,21 @@ export default function ScoreboardClient({
   allAssignments,
   cfScores: initialCF,
   emojiMap,
+  avatarMap,
 }: {
   user: User;
   entries: ScoreboardEntry[];
   allAssignments: AssignmentDetail[];
   cfScores: CFScore[];
   emojiMap: Record<string, string>;
+  avatarMap: Record<string, string | null>;
 }) {
   const [tab, setTab] = useState<"challenge" | "chinese">("challenge");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [cfScores, setCfScores] = useState(initialCF);
   const [cfLoading, setCfLoading] = useState<string | null>(null);
   const [pointsInput, setPointsInput] = useState<Record<string, string>>({});
+  const [viewingProfile, setViewingProfile] = useState<{ name: string; url: string } | null>(null);
 
   const isAnton = user.name === "Anton";
 
@@ -69,7 +72,7 @@ export default function ScoreboardClient({
 
   async function handleAddPoints(playerName: string) {
     const val = parseInt(pointsInput[playerName] || "0");
-    if (!val || val <= 0) return;
+    if (!val) return;
     await handleCF(playerName, "points", val);
     setPointsInput((prev) => ({ ...prev, [playerName]: "" }));
   }
@@ -132,29 +135,48 @@ export default function ScoreboardClient({
               );
 
               const medals = ["🥇", "🥈", "🥉"];
+              const rankTitles = ["Legend", "Leeuw", "Matig ze", "Wa ne sukkeleir"];
+              const rankTitleColors = ["text-amber-400", "text-slate-300", "text-orange-400", "text-red-400"];
               const rankColors = [
                 "from-amber-500/20 to-transparent border-amber-500/40",
                 "from-slate-400/10 to-transparent border-slate-400/30",
                 "from-orange-700/10 to-transparent border-orange-700/30",
-                "from-slate-800/40 to-transparent border-slate-700",
+                "from-red-900/20 to-transparent border-red-500/30",
+              ];
+              const rankAnimations = [
+                "animate-pulse",
+                "",
+                "",
+                "animate-[wiggle_1s_ease-in-out_infinite]",
               ];
 
               return (
-                <div key={entry.user_id}>
-                  <button
+                <div key={entry.user_id} className={rankAnimations[Math.min(i, 3)]}>
+                  <div
                     onClick={() => toggle(entry.user_id)}
-                    className={`w-full rounded-xl border bg-gradient-to-r p-4 text-left transition active:scale-[0.98] ${
+                    className={`w-full cursor-pointer rounded-xl border bg-gradient-to-r p-4 text-left transition active:scale-[0.98] ${
                       rankColors[Math.min(i, 3)]
                     } ${isExpanded ? "ring-1 ring-amber-500/50" : ""}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="min-w-[2rem] text-center text-2xl">
-                          {medals[i] || `#${i + 1}`}
-                        </span>
+                        <div className="min-w-[2.5rem] flex flex-col items-center">
+                          <span className="text-2xl">
+                            {medals[i] || `#${i + 1}`}
+                          </span>
+                          <span className={`text-[9px] font-bold ${rankTitleColors[Math.min(i, 3)]}`}>
+                            {rankTitles[Math.min(i, 3)]}
+                          </span>
+                        </div>
                         <div>
-                          <p className="text-lg font-extrabold text-white">
-                            {emojiMap[entry.name] || "🎮"} {entry.name}
+                          <p className="text-lg font-extrabold text-white flex items-center gap-1.5">
+                            {avatarMap[entry.name] ? (
+                              <span className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setViewingProfile({ name: entry.name, url: avatarMap[entry.name]! }); }}>
+                                <img src={avatarMap[entry.name]!} alt="" className="w-9 h-9 rounded-full object-cover ring-2 ring-amber-500/50 active:scale-110 transition" />
+                              </span>
+                            ) : (
+                              <span className="text-2xl">{emojiMap[entry.name] || "🎮"}</span>
+                            )} {entry.name}
                             {entry.name === user.name && (
                               <span className="ml-2 text-xs font-normal text-gray-500">
                                 (gij)
@@ -175,7 +197,7 @@ export default function ScoreboardClient({
                         </span>
                       </div>
                     </div>
-                  </button>
+                  </div>
 
                   {isExpanded && (
                     <div className="mt-1 space-y-1 rounded-b-xl border border-t-0 border-slate-700 bg-slate-800/40 p-3">
@@ -242,7 +264,7 @@ export default function ScoreboardClient({
 
                       {playerAssignments.length === 0 && (
                         <p className="py-2 text-center text-sm text-gray-500">
-                          Nog niks gedaan, luiaard
+                          Nog niks gedaan, tammen hol
                         </p>
                       )}
                     </div>
@@ -276,20 +298,36 @@ export default function ScoreboardClient({
                 .map((player, i) => {
                   const pts = player.points || 0;
                   const wins = player.wins || 0;
+                  const cfRankTitles = ["Legend", "Leeuw", "Matig ze", "Wa ne sukkeleir"];
+                  const cfRankColors = ["text-red-400", "text-slate-300", "text-orange-400", "text-gray-500"];
+                  const cfCardColors = [
+                    "border-red-500/40 bg-gradient-to-r from-red-500/10 to-transparent",
+                    "border-slate-400/30 bg-gradient-to-r from-slate-400/5 to-transparent",
+                    "border-orange-700/30 bg-gradient-to-r from-orange-700/5 to-transparent",
+                    "border-red-900/30 bg-gradient-to-r from-red-900/10 to-transparent",
+                  ];
+                  const cfAnims = ["animate-pulse", "", "", "animate-[wiggle_1s_ease-in-out_infinite]"];
                   return (
                     <div
                       key={player.player_name}
-                      className={`rounded-xl border p-4 transition ${
-                        i === 0
-                          ? "border-red-500/40 bg-gradient-to-r from-red-500/10 to-transparent"
-                          : "border-slate-700 bg-slate-800/60"
-                      }`}
+                      className={`rounded-xl border p-4 transition ${cfCardColors[Math.min(i, 3)]} ${cfAnims[Math.min(i, 3)]}`}
                     >
+                      <div className="mb-1">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider ${cfRankColors[Math.min(i, 3)]}`}>
+                          #{i + 1} · {cfRankTitles[Math.min(i, 3)]}
+                        </span>
+                      </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div>
-                            <p className="text-lg font-extrabold text-white">
-                              {emojiMap[player.player_name] || "🎮"} {player.player_name}
+                            <p className="text-lg font-extrabold text-white flex items-center gap-1.5">
+                              {avatarMap[player.player_name] ? (
+                                <span className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setViewingProfile({ name: player.player_name, url: avatarMap[player.player_name]! }); }}>
+                                  <img src={avatarMap[player.player_name]!} alt="" className="w-9 h-9 rounded-full object-cover ring-2 ring-amber-500/50 active:scale-110 transition" />
+                                </span>
+                              ) : (
+                                <span className="text-2xl">{emojiMap[player.player_name] || "🎮"}</span>
+                              )} {player.player_name}
                               {player.player_name === user.name && (
                                 <span className="ml-2 text-xs font-normal text-gray-500">(gij)</span>
                               )}
@@ -331,7 +369,7 @@ export default function ScoreboardClient({
                             <input
                               type="number"
                               inputMode="numeric"
-                              placeholder="Punten..."
+                              placeholder="+/- punten"
                               value={pointsInput[player.player_name] || ""}
                               onChange={(e) =>
                                 setPointsInput((prev) => ({
@@ -344,9 +382,9 @@ export default function ScoreboardClient({
                             <button
                               onClick={() => handleAddPoints(player.player_name)}
                               disabled={cfLoading !== null || !pointsInput[player.player_name]}
-                              className="rounded bg-emerald-600 px-3 py-1 text-xs font-bold text-white transition hover:bg-emerald-500 active:scale-90 disabled:opacity-50"
+                              className="rounded bg-emerald-600 px-2 py-1 text-xs font-bold text-white transition hover:bg-emerald-500 active:scale-90 disabled:opacity-50"
                             >
-                              + Punten
+                              ✓
                             </button>
                           </div>
                         </div>
@@ -358,6 +396,29 @@ export default function ScoreboardClient({
           </div>
         )}
       </div>
+
+      {/* Profile picture viewer modal */}
+      {viewingProfile && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6"
+          onClick={() => setViewingProfile(null)}
+        >
+          <div className="flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={viewingProfile.url}
+              alt={viewingProfile.name}
+              className="w-64 h-64 rounded-full object-cover ring-4 ring-amber-500/50 shadow-2xl"
+            />
+            <p className="text-lg font-bold text-white">{viewingProfile.name}</p>
+            <button
+              onClick={() => setViewingProfile(null)}
+              className="mt-2 rounded-lg bg-slate-700 px-6 py-2 text-sm font-medium text-gray-300 transition hover:bg-slate-600"
+            >
+              Sluiten
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

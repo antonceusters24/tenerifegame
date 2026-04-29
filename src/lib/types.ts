@@ -4,6 +4,7 @@ export type User = {
   role: "player" | "admin";
   pin_changed: boolean;
   emoji: string;
+  avatar_url: string | null;
 };
 
 export type Category = {

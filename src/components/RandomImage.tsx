@@ -26,7 +26,7 @@ export default function RandomImage({ className = "" }: { className?: string }) 
   // Videos as full-screen fixed background with autoplay
   if (type === "video") {
     return (
-      <div className="fixed inset-0 z-0" style={{ height: "100dvh" }}>
+      <div className="fixed inset-0 z-0" style={{ top: "140px", height: "calc(100dvh - 140px)" }}>
         <video
           ref={videoRef}
           src={src}
@@ -50,7 +50,7 @@ export default function RandomImage({ className = "" }: { className?: string }) 
           className="pointer-events-none h-full w-full object-contain"
           style={{ backgroundColor: "#0f172a" }}
         />
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/75" />
+        <div className="pointer-events-none absolute inset-0 bg-slate-950/60" />
         <button
           onClick={() => {
             setMuted(!muted);
@@ -69,7 +69,7 @@ export default function RandomImage({ className = "" }: { className?: string }) 
   return (
     <div
       className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-1000"
-      style={{ opacity: loaded ? 1 : 0, height: "100dvh", backgroundColor: "#0f172a" }}
+      style={{ opacity: loaded ? 1 : 0, top: "140px", height: "calc(100dvh - 140px)", backgroundColor: "#0f172a" }}
     >
       <img
         src={src}
@@ -77,7 +77,7 @@ export default function RandomImage({ className = "" }: { className?: string }) 
         onLoad={() => setLoaded(true)}
         className="h-full w-full object-contain"
       />
-      <div className="absolute inset-0 bg-slate-950/75" />
+      <div className="absolute inset-0 bg-slate-950/60" />
     </div>
   );
 }

@@ -30,7 +30,7 @@ export default async function DashboardPage() {
   // All players with their emojis
   const { data: players } = await supabase
     .from("users")
-    .select("name, emoji")
+    .select("name, emoji, avatar_url")
     .eq("role", "player")
     .order("name");
 

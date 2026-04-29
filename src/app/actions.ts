@@ -33,7 +33,7 @@ export async function login(formData: FormData) {
   const supabase = await createClient();
   const { data: user, error } = await supabase
     .from("users")
-    .select("id, name, role, pin_changed, emoji")
+    .select("id, name, role, pin_changed, emoji, avatar_url")
     .eq("name", name)
     .eq("pin", pin)
     .single();
@@ -76,7 +76,7 @@ export async function getCurrentUser() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("users")
-    .select("id, name, role, pin_changed, emoji")
+    .select("id, name, role, pin_changed, emoji, avatar_url")
     .eq("id", userId)
     .single();
 
@@ -123,7 +123,7 @@ export async function updateEmoji(emoji: string) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("users")
-    .update({ emoji })
+    .update({ emoji, avatar_url: null })
     .eq("id", user.id);
 
   if (error) return { error: "Failed to update emoji" };

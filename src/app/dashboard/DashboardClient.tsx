@@ -7,6 +7,7 @@ import {
   getCurrentDay,
   ACTIVATION_TIME,
   GAME_DATES,
+  challengesAvailable,
 } from "@/lib/game";
 import {
   completeChallenge,
@@ -23,6 +24,7 @@ import ChallengeReveal from "@/components/ChallengeReveal";
 import EasterEggs from "@/components/EasterEggs";
 
 const DAY_NAMES = [
+  { name: "De aankomst", emoji: "🛬", subtitle: "Stilte voor de storm" },
   { name: "De oepwarming", emoji: "🔥", subtitle: "Alleman fris en fruitig, zuipeeee" },
   { name: "Den doorzetter", emoji: "💪", subtitle: "Vandaag wordt het nog steviger eh mannen" },
   { name: "Den halve", emoji: "⚡", subtitle: "Zen al wijt halverwege, tandje bijsteken nouw" },
@@ -33,26 +35,27 @@ const DAY_NAMES = [
 
 function DayTracker({ day }: { day: number }) {
   const info = DAY_NAMES[day - 1] || DAY_NAMES[0];
-  const progress = (day / 6) * 100;
+  const progress = (day / 7) * 100;
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="mb-4 rounded-xl border border-amber-500/20 bg-slate-800/60 px-4 py-3">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-gray-400">Dag {day} van 6</span>
-        <span className="text-xs text-gray-500">nog {6 - day} te gaan</span>
-      </div>
-      <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-700">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <div className="text-center">
-        <span className="text-lg font-bold text-amber-400">
-          {info.emoji} {info.name}
-        </span>
-        <p className="mt-0.5 text-xs italic text-gray-400">&ldquo;{info.subtitle}&rdquo;</p>
-      </div>
+    <div className="rounded-xl border border-amber-500/20 bg-slate-800/60 px-3 py-2">
+      <button onClick={() => setCollapsed((c) => !c)} className="w-full flex items-center justify-between">
+        <span className="text-[10px] font-medium text-gray-400">Dag {day}/7</span>
+        <span className="text-sm font-bold text-amber-400">{info.emoji} {info.name}</span>
+        <span className="text-[10px] text-gray-500">{collapsed ? "▼" : "▲"}</span>
+      </button>
+      {!collapsed && (
+        <>
+          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-700">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="mt-1 text-center text-[10px] italic text-gray-500">&ldquo;{info.subtitle}&rdquo;</p>
+        </>
+      )}
     </div>
   );
 }
@@ -66,7 +69,7 @@ export default function DashboardClient({
   user: User;
   assignments: Assignment[];
   pendingConfirmations: PendingConfirmation[];
-  players: { name: string; emoji: string }[];
+  players: { name: string; emoji: string; avatar_url: string | null }[];
 }) {
   const [assignments, setAssignments] = useState(initial);
   const [pending, setPending] = useState(initialPending);
@@ -77,9 +80,14 @@ export default function DashboardClient({
   const [revealAnim, setRevealAnim] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [emojiInput, setEmojiInput] = useState(user.emoji || "");
+  const [uploading, setUploading] = useState(false);
+  const [viewingProfile, setViewingProfile] = useState<{ name: string; url: string } | null>(null);
 
-  const gameStatus = getGameStatus();
-  const currentDay = getCurrentDay();
+  // TODO: Remove Anton override after testing
+  const isTestUser = user.name === "Anton";
+  const gameStatus = isTestUser ? "active" : getGameStatus();
+  const currentDay = isTestUser ? (getCurrentDay() || 1) : getCurrentDay();
 
   useEffect(() => {
     function update() {
@@ -180,8 +188,27 @@ export default function DashboardClient({
     const res = await updateEmoji(emoji);
     if (!("error" in res)) {
       user.emoji = emoji;
-      setPlayers((prev) => prev.map((p) => p.name === user.name ? { ...p, emoji } : p));
+      user.avatar_url = null;
+      setPlayers((prev) => prev.map((p) => p.name === user.name ? { ...p, emoji, avatar_url: null } : p));
     }
+  }
+
+  async function handleAvatarUpload(file: File) {
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch("/api/avatar", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.avatar_url) {
+        user.avatar_url = data.avatar_url;
+        setPlayers((prev) => prev.map((p) => p.name === user.name ? { ...p, avatar_url: data.avatar_url } : p));
+        setShowEmojiPicker(false);
+      }
+    } catch {
+      alert("Upload mislukt");
+    }
+    setUploading(false);
   }
 
   return (
@@ -189,53 +216,87 @@ export default function DashboardClient({
       {gameStatus === "active" && <RandomImage />}
       {gameStatus === "active" && <EasterEggs />}
       <div className="relative z-10 mx-auto max-w-lg">
-        {/* Header */}
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <h1 className="shrink-0 text-2xl font-extrabold text-white flex items-center gap-1">
-            <button onClick={() => setShowEmojiPicker(true)} className="hover:scale-110 transition" title="Verander je emoji">
-              {user.emoji || "🎮"}
-            </button>{" "}
-            {user.name}
-          </h1>
-          <div className="flex items-center gap-1.5 flex-wrap justify-end">
-            {gameStatus === "active" && (
-              <Link
-                href="/gallery"
-                className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
-              >
-                📸
-              </Link>
-            )}
-            {gameStatus === "active" && (
-              <Link
-                href="/scoreboard"
-                className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
-              >
-                🏆
-              </Link>
-            )}
-            {(completed.length > 0 || skipped.length > 0) && (
-              <button
-                onClick={() => setShowHistory((h) => !h)}
-                className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${
-                  showHistory
-                    ? "bg-amber-500 text-black"
-                    : "bg-slate-700/50 text-amber-400 hover:bg-slate-700"
-                }`}
-              >
-                📜 {completed.length + skipped.length}
-              </button>
-            )}
-            <form action={logout}>
-              <button className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700" title="Logout">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </button>
-            </form>
+        {/* Header / Profile */}
+        <div className="mb-5 rounded-2xl border border-slate-700/60 bg-gradient-to-r from-slate-800/80 via-slate-800/50 to-slate-800/80 p-4 backdrop-blur">
+          <div className="flex items-center gap-3">
+            {/* Avatar / Emoji */}
+            <button
+              onClick={() => setShowEmojiPicker(true)}
+              className="relative group shrink-0"
+              title="Verander je emoji/foto"
+            >
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover ring-2 ring-amber-500/70 shadow-lg shadow-amber-500/20" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center text-3xl shadow-lg shadow-amber-500/10">
+                  {user.emoji || "🎮"}
+                </div>
+              )}
+              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition flex items-center justify-center">
+                <span className="text-xs text-white">✏️</span>
+              </div>
+            </button>
+
+            {/* Name + status */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-extrabold text-white truncate">{user.name}</h1>
+              <p className="text-xs text-gray-400">
+                {gameStatus === "active" && currentDay
+                  ? `Dag ${currentDay} · ${completed.length} challenges gedaan`
+                  : gameStatus === "active"
+                  ? "Game is live! 🎉"
+                  : "Countdown loopt..."}
+              </p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {gameStatus === "active" && (
+                <Link
+                  href="/gallery"
+                  className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+                >
+                  📸
+                </Link>
+              )}
+              {gameStatus === "active" && (
+                <Link
+                  href="/scoreboard"
+                  className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+                >
+                  🏆
+                </Link>
+              )}
+              {(completed.length > 0 || skipped.length > 0) && (
+                <button
+                  onClick={() => setShowHistory((h) => !h)}
+                  className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${
+                    showHistory
+                      ? "bg-amber-500 text-black"
+                      : "bg-slate-700/50 text-amber-400 hover:bg-slate-700"
+                  }`}
+                >
+                  📜 {completed.length + skipped.length}
+                </button>
+              )}
+              <form action={logout}>
+                <button className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700" title="Logout">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                </button>
+              </form>
+            </div>
           </div>
+
+          {/* Day tracker inside profile card */}
+          {gameStatus === "active" && currentDay && (
+            <div className="mt-3 border-t border-slate-700/50 pt-3">
+              <DayTracker day={currentDay} />
+            </div>
+          )}
         </div>
 
         {/* Before game */}
@@ -305,7 +366,13 @@ export default function DashboardClient({
                         : "border-slate-700/60 bg-slate-800/40"
                     }`}
                   >
-                    <span className="text-2xl">{player.emoji || "🎮"}</span>
+                    {player.avatar_url ? (
+                      <button onClick={() => setViewingProfile({ name: player.name, url: player.avatar_url! })}>
+                        <img src={player.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover ring-2 ring-amber-500/40" />
+                      </button>
+                    ) : (
+                      <span className="text-2xl">{player.emoji || "🎮"}</span>
+                    )}
                     <p className={`text-xs font-bold ${player.name === user.name ? "text-amber-400" : "text-white"}`}>
                       {player.name}
                     </p>
@@ -347,26 +414,25 @@ export default function DashboardClient({
           </div>
         )}
 
-        {/* Game active but challenges not yet (evening of May 12) */}
-        {gameStatus === "active" && !currentDay && (
-          <div className="rounded-xl border border-amber-500/30 bg-slate-800/60 p-8 text-center backdrop-blur">
-            <p className="mb-3 text-6xl">🎉</p>
-            <h2 className="mb-2 text-2xl font-extrabold text-white">
-              Welcome to Tenerife!
+        {/* Game active but challenges not yet (evening of May 12 / day 1) */}
+        {gameStatus === "active" && currentDay && !challengesAvailable() && (
+          <div className="relative mt-8 flex flex-col items-center text-center">
+            <div className="absolute -inset-4 rounded-3xl bg-gradient-to-b from-slate-900/80 via-slate-900/60 to-transparent blur-sm -z-10" />
+            <h2 className="text-3xl font-black text-white drop-shadow-lg" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.8)" }}>
+              Welkom in Guido&apos;s fokhok!
             </h2>
-            <p className="text-sm text-gray-400">
-              De game is bijna live. Morgenochtend starten de challenges.
+            <p className="mt-2 text-base font-medium text-gray-200 drop-shadow" style={{ textShadow: "0 1px 10px rgba(0,0,0,0.8)" }}>
+              Let the games begin
             </p>
-            <p className="mt-3 text-xs text-amber-400/60 italic">
-              Geniet van de eerste avond, mannen. Morgen beginnen de punten te tellen...
+            <p className="mt-4 rounded-full bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 text-xs font-semibold text-amber-400 backdrop-blur-sm">
+              ⏳ Vanaf morgenvroeg 9u begint het voor echt...
             </p>
           </div>
         )}
 
-        {/* During game */}
-        {gameStatus === "active" && currentDay && (
+        {/* During game - challenges available */}
+        {gameStatus === "active" && currentDay && challengesAvailable() && (
           <>
-            <DayTracker day={currentDay} />
 
             {/* Peer Confirmations - only Anton sees this */}
             {user.name === "Anton" && pending.length > 0 && (
@@ -469,7 +535,7 @@ export default function DashboardClient({
       </div>
 
       {/* Bottom bar - active challenges */}
-      {gameStatus === "active" && currentDay && (
+      {gameStatus === "active" && currentDay && challengesAvailable() && (
         <>
           {active.length === 0 && pendingOwn.length === 0 ? (
             <div
@@ -564,27 +630,103 @@ export default function DashboardClient({
         />
       )}
 
-      {/* Emoji Picker Modal */}
+      {/* Profile picture viewer modal */}
+      {viewingProfile && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6"
+          onClick={() => setViewingProfile(null)}
+        >
+          <div className="flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={viewingProfile.url}
+              alt={viewingProfile.name}
+              className="w-64 h-64 rounded-full object-cover ring-4 ring-amber-500/50 shadow-2xl"
+            />
+            <p className="text-lg font-bold text-white">{viewingProfile.name}</p>
+            <button
+              onClick={() => setViewingProfile(null)}
+              className="mt-2 rounded-lg bg-slate-700 px-6 py-2 text-sm font-medium text-gray-300 transition hover:bg-slate-600"
+            >
+              Sluiten
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Emoji / Avatar Picker Modal */}
       {showEmojiPicker && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onClick={() => setShowEmojiPicker(false)}>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 p-4" onClick={() => setShowEmojiPicker(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="mb-3 text-center text-lg font-bold text-white">Kies je emoji</h3>
-            <div className="grid grid-cols-6 gap-2">
-              {EMOJI_OPTIONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => handleEmojiChange(emoji)}
-                  className={`rounded-xl p-2 text-2xl transition hover:scale-110 hover:bg-slate-700 ${
-                    emoji === user.emoji ? "bg-amber-500/20 ring-2 ring-amber-500" : ""
-                  }`}
-                >
-                  {emoji}
-                </button>
-              ))}
+            <h3 className="mb-4 text-center text-lg font-bold text-white">Kies emoji of foto</h3>
+
+            {/* Current display */}
+            <div className="mb-4 flex items-center justify-center">
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover ring-2 ring-amber-500" />
+              ) : (
+                <span className="text-5xl">{user.emoji || "🎮"}</span>
+              )}
             </div>
+
+            {/* Emoji input - opens native keyboard on iPhone */}
+            <div className="mb-4">
+              <label className="mb-1 block text-xs font-medium text-gray-400">Typ een emoji (gebruik emoji-toetsenbord)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={emojiInput}
+                  onChange={(e) => setEmojiInput(e.target.value)}
+                  className="flex-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-center text-2xl text-white focus:border-amber-500 focus:outline-none"
+                  placeholder="🎮"
+                  autoComplete="off"
+                />
+                <button
+                  onClick={() => { if (emojiInput.trim()) handleEmojiChange(emojiInput.trim()); }}
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-black transition hover:bg-amber-400"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+
+            {/* Quick emoji picks */}
+            <div className="mb-4">
+              <p className="mb-2 text-xs font-medium text-gray-400">Of kies snel:</p>
+              <div className="grid grid-cols-8 gap-1.5">
+                {EMOJI_OPTIONS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleEmojiChange(emoji)}
+                    className={`rounded-lg p-1.5 text-xl transition hover:scale-110 hover:bg-slate-700 ${
+                      emoji === user.emoji && !user.avatar_url ? "bg-amber-500/20 ring-2 ring-amber-500" : ""
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Image upload */}
+            <div className="mb-3">
+              <label className="mb-1 block text-xs font-medium text-gray-400">Of upload een foto</label>
+              <label className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-600 bg-slate-800/50 py-3 text-sm font-medium text-gray-300 transition hover:border-amber-500 hover:text-amber-400 ${uploading ? "pointer-events-none opacity-50" : ""}`}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleAvatarUpload(file);
+                  }}
+                />
+                {uploading ? "Uploaden..." : "📷 Foto kiezen"}
+              </label>
+            </div>
+
             <button
               onClick={() => setShowEmojiPicker(false)}
-              className="mt-4 w-full rounded-lg bg-slate-700 py-2 text-sm font-medium text-gray-300 transition hover:bg-slate-600"
+              className="w-full rounded-lg bg-slate-700 py-2 text-sm font-medium text-gray-300 transition hover:bg-slate-600"
             >
               Annuleer
             </button>

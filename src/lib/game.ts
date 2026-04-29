@@ -1,4 +1,5 @@
 export const GAME_DATES = [
+  "2026-05-12",
   "2026-05-13",
   "2026-05-14",
   "2026-05-15",
@@ -28,7 +29,7 @@ export function getLocalDateString(): string {
 
 export function getCurrentDay(): number | null {
   const now = new Date();
-  if (now < new Date(CHALLENGES_START)) return null;
+  if (now < new Date(ACTIVATION_TIME)) return null;
   const today = getLocalDateString();
   const index = GAME_DATES.indexOf(today);
   return index >= 0 ? index + 1 : null;
