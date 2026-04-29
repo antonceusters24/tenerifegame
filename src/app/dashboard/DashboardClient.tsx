@@ -306,6 +306,22 @@ export default function DashboardClient({
           </div>
         )}
 
+        {/* Game active but challenges not yet (evening of May 12) */}
+        {gameStatus === "active" && !currentDay && (
+          <div className="rounded-xl border border-amber-500/30 bg-slate-800/60 p-8 text-center backdrop-blur">
+            <p className="mb-3 text-6xl">🎉</p>
+            <h2 className="mb-2 text-2xl font-extrabold text-white">
+              Welcome to Tenerife!
+            </h2>
+            <p className="text-sm text-gray-400">
+              De game is bijna live. Morgenochtend starten de challenges.
+            </p>
+            <p className="mt-3 text-xs text-amber-400/60 italic">
+              Geniet van de eerste avond, mannen. Morgen beginnen de punten te tellen...
+            </p>
+          </div>
+        )}
+
         {/* During game */}
         {gameStatus === "active" && currentDay && (
           <>
