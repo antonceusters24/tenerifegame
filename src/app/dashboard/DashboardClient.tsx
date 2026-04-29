@@ -158,15 +158,15 @@ export default function DashboardClient({
       {gameStatus === "active" && <EasterEggs />}
       <div className="relative z-10 mx-auto max-w-lg">
         {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold text-white">
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h1 className="shrink-0 text-2xl font-extrabold text-white">
             🍺 {user.name}
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
             {gameStatus === "active" && (
               <Link
                 href="/gallery"
-                className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+                className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
               >
                 📸
               </Link>
@@ -174,15 +174,15 @@ export default function DashboardClient({
             {gameStatus === "active" && (
               <Link
                 href="/scoreboard"
-                className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
+                className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
               >
-                🏆 Scores
+                🏆
               </Link>
             )}
             {(completed.length > 0 || skipped.length > 0) && (
               <button
                 onClick={() => setShowHistory((h) => !h)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${
                   showHistory
                     ? "bg-amber-500 text-black"
                     : "bg-slate-700/50 text-amber-400 hover:bg-slate-700"
@@ -338,14 +338,14 @@ export default function DashboardClient({
                         <button
                           onClick={() => handleConfirm(p.id)}
                           disabled={loading === p.id}
-                          className="flex-1 rounded-lg bg-emerald-600 py-1.5 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                          className="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-50"
                         >
                           ✅ Klopt
                         </button>
                         <button
                           onClick={() => handleReject(p.id)}
                           disabled={loading === p.id}
-                          className="flex-1 rounded-lg bg-red-600/80 py-1.5 text-sm font-bold text-white transition hover:bg-red-500 disabled:opacity-50"
+                          className="flex-1 rounded-lg bg-red-600/80 py-2 text-sm font-bold text-white transition hover:bg-red-500 disabled:opacity-50"
                         >
                           ❌ Gelansen
                         </button>
