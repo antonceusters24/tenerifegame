@@ -60,16 +60,328 @@ function DayTracker({ day }: { day: number }) {
   );
 }
 
+const RANK_EMOJI = ["🥇", "🥈", "🥉", "💀"];
+const rankEmoji = (r: number) => RANK_EMOJI[Math.min(r, 4) - 1] ?? "💀";
+
+const END_MESSAGES: Record<string, string> = {
+  "1-1": "Absolute legend. De allround beste, volwaardig Chinese Fuckerke en challenge koning. Gij hebt Tenerife volledig uitgespeeld Proficiat kameraad",
+  "1-2": "Kaaj goe gedaan bro, ge moogt trots zijn op uweigen. Jammer van die nipte tweede plek met chinese fucking, maar toch een verdienstelijk resultaat! Keep it going en tot de volgendeuuuh",
+  "1-3": "Ferm bro, knap da ge de challenges hebt gewonnen, maar het feit da gij zo slecht zijt in chinees poepen, maakt alles wa minder rozegeur en maneschijn he vriend. Ga maar nr China op poepkamp tegen volgend jaar, sneu manneke",
+  "1-4": "Challenge koning, maar in plaats van zelf Chinees te poepen, bent gij langs achter geneukt geweest door rest... Get well soon strijder!",
+  "2-1": "Chinese Fucking baas! Ge weet hoe te poepen, da's zeker. De challenges hingen net buiten bereik maar uw fokhok-game was godgelijk. Respect kameraad.",
+  "2-2": "Tweede in alles. Nie genoeg voor de overwinning maar ook nie slecht genoeg om echt uitgelachen te worden. Gij zijt de Wout Van Aert van Tenerife. Droogt uw tranen, en op naar volgend jaar!",
+  "2-3": "Challenges niet slecht, maar Chinese Fucking... da was duidelijk minder uw ding he. Iemand moest derde worden, en gij waart sportief genoeg om die rol op te nemen, merci daarvoor kameraad",
+  "2-4": "Challenges goed gedaan, dikke chapeau daarvoor! Maar Chinese Fucking, serieus? Laatste? Ge zou u eigen moeten schamen, trekt echt op niks. Maar bon, fijn dat ge derbij waart i guess...",
+  "3-1": "Chinese Fucking heer en meester, maar de challenges waren nie goe genoeg voor meneer ze. Hoe kunde da nu zo slecht doen? Maja, zolang da ge zelf tevreden zijt ist goe he kameraad. Bye byeeee",
+  "3-2": "Nergens echt slecht, nergens echt goed. Gij zijt de definitie van erbij zijn. Maar da deed ge keurig en da telt ook mee hé. Salut en tot de volgende keer!",
+  "3-3": "Twee keer derde... da's toch een beetje sneu he. Ge waart gelukkig niet de slechtste, maar ge zijt dus ook nergens goe in... See you next year, hopelijk met wat meer inzet van uwentwege!",
+  "3-4": "Challenges al niet super, maar dan ook nog eens laatste bij Chinese Fucking? Da is een dubbel verlies kameraad. Maar goe, ge zult uw best wel hebben gedaan, volgend jaar nieuwe kansen!",
+  "4-1": "Hoe jammer is dees? Koning Chinese Fucking, maar dan niks bakken van die challenges? Uw mama gaat nie trots zijn op uw ze kameraad. Maar goe, merci om erbij te zijn en tot de volgende",
+  "4-2": "Ja jom... die opdrachtjes waren nie uw ding precies he... Chance da ge uw eer nog een beetje hebt gered met goe te poepen. Blijven oefenen, see you next year!",
+  "4-3": "Hadde nie beter thuisgebleven? 3e me chinees poepen oke, niveau lag hoog, maar echt zo slecht bij de challenges, triestig gevalleke... ",
+  "4-4": "Man man man, hoe slecht zedde gij eigenlijk? Bij alles stade achteraan, hoe triestig is dees... Hopelijk volgend jaar beter zeker... ",
+};
+
+function getEndMessage(challengeRank: number, cfRank: number): string {
+  const cr = Math.min(challengeRank, 4);
+  const cfr = Math.min(cfRank, 4);
+  return END_MESSAGES[`${cr}-${cfr}`] ?? "Wa ne reis! Check de scores voor alle details.";
+}
+
+type PodiumPlayer = { name: string; avatar_url: string | null; emoji: string; total_points: number };
+
+function PodiumStage({ players, accentColor }: { players: PodiumPlayer[]; accentColor: "amber" | "red" }) {
+  const [p1, p2, p3, p4] = players;
+  const isRed = accentColor === "red";
+  return (
+    <>
+      {/* Podium */}
+      <div className="flex items-end justify-center gap-3 mb-5">
+        {/* 2nd */}
+        {p2 && (
+          <div className="flex flex-col items-center">
+            {p2.avatar_url ? (
+              <img src={p2.avatar_url} alt="" className="mb-1.5 h-14 w-14 rounded-full object-cover ring-2 ring-slate-400/60" />
+            ) : (
+              <div className="mb-1.5 flex h-14 w-14 items-center justify-center rounded-full bg-slate-700 text-2xl ring-2 ring-slate-400/40">{p2.emoji}</div>
+            )}
+            <p className="mb-0.5 max-w-[72px] truncate text-center text-xs font-bold text-slate-300">{p2.name}</p>
+            <p className="mb-1 text-[10px] text-slate-400">{p2.total_points}pt</p>
+            <div className="flex h-16 w-20 items-center justify-center rounded-t-xl border border-slate-500/30 bg-gradient-to-b from-slate-400/20 to-slate-600/10">
+              <span className="text-2xl">🥈</span>
+            </div>
+          </div>
+        )}
+        {/* 1st */}
+        {p1 && (
+          <div className="flex flex-col items-center">
+            <div className="relative mb-1.5">
+              <div className={`absolute -inset-3 rounded-full blur-xl ${isRed ? "bg-red-500/20" : "bg-amber-500/20"}`} />
+              <div className={`relative rounded-full p-[2px] shadow-lg ${isRed ? "bg-gradient-to-br from-red-400 via-orange-300 to-red-600 shadow-red-500/30" : "bg-gradient-to-br from-amber-400 via-yellow-300 to-orange-500 shadow-amber-500/30"}`}>
+                {p1.avatar_url ? (
+                  <img src={p1.avatar_url} alt="" className="h-[72px] w-[72px] rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-slate-800 text-3xl">{p1.emoji}</div>
+                )}
+              </div>
+              <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-xl" style={{ filter: `drop-shadow(0 0 6px ${isRed ? "rgba(239,68,68,0.9)" : "rgba(245,158,11,0.9)"})` }}>
+                {isRed ? "💩" : "👑"}
+              </span>
+            </div>
+            <p className="mb-0.5 max-w-[80px] truncate text-center text-sm font-black text-white">{p1.name}</p>
+            <p className={`mb-1 text-[10px] font-bold ${isRed ? "text-red-400" : "text-amber-400"}`}>{p1.total_points}pt</p>
+            <div className={`flex h-24 w-24 items-center justify-center rounded-t-xl border shadow-lg ${isRed ? "border-red-500/40 bg-gradient-to-b from-red-500/25 to-red-700/10 shadow-red-500/10" : "border-amber-500/40 bg-gradient-to-b from-amber-500/25 to-amber-700/10 shadow-amber-500/10"}`}>
+              <span className="text-3xl">🥇</span>
+            </div>
+          </div>
+        )}
+        {/* 3rd */}
+        {p3 && (
+          <div className="flex flex-col items-center">
+            {p3.avatar_url ? (
+              <img src={p3.avatar_url} alt="" className="mb-1.5 h-12 w-12 rounded-full object-cover ring-2 ring-orange-700/50" />
+            ) : (
+              <div className="mb-1.5 flex h-12 w-12 items-center justify-center rounded-full bg-slate-700 text-xl ring-2 ring-orange-700/30">{p3.emoji}</div>
+            )}
+            <p className="mb-0.5 max-w-[64px] truncate text-center text-xs font-bold text-orange-400">{p3.name}</p>
+            <p className="mb-1 text-[10px] text-gray-500">{p3.total_points}pt</p>
+            <div className="flex h-10 w-20 items-center justify-center rounded-t-xl border border-orange-700/30 bg-gradient-to-b from-orange-700/20 to-orange-900/5">
+              <span className="text-xl">🥉</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Ground line */}
+      <div className="mb-4 h-px w-full bg-gradient-to-r from-transparent via-slate-600/60 to-transparent" />
+
+      {/* Loser */}
+      {p4 && (
+        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-red-900/30 bg-red-900/10 px-4 py-3">
+          {p4.avatar_url ? (
+            <img src={p4.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover opacity-60" />
+          ) : (
+            <span className="text-2xl opacity-60">{p4.emoji}</span>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-gray-400">{p4.name}</p>
+            <p className="text-xs text-red-400">💀 {isRed ? "Grootste kakker" : "Wa ne sukkeleir"} · {p4.total_points}pt</p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function PodiumModal({
+  challengePlayers,
+  cfPlayers,
+  onClose,
+}: {
+  challengePlayers: PodiumPlayer[];
+  cfPlayers: PodiumPlayer[];
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<"challenge" | "cf">("challenge");
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/85"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-t-3xl bg-slate-900 pb-10 pt-5 px-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-slate-700" />
+
+        <p className="mb-4 text-center text-2xl font-black text-white">🏆 Eindklassement</p>
+
+        {/* Tabs */}
+        <div className="mb-6 flex gap-1.5 rounded-xl bg-slate-800 p-1">
+          <button
+            onClick={() => setTab("challenge")}
+            className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${tab === "challenge" ? "bg-amber-500 text-black shadow" : "text-gray-400 hover:text-gray-200"}`}
+          >
+            🎯 Challenges
+          </button>
+          <button
+            onClick={() => setTab("cf")}
+            className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${tab === "cf" ? "bg-red-500 text-white shadow" : "text-gray-400 hover:text-gray-200"}`}
+          >
+            👲 Chinese Fucking
+          </button>
+        </div>
+
+        {tab === "challenge" && <PodiumStage players={challengePlayers} accentColor="amber" />}
+        {tab === "cf" && <PodiumStage players={cfPlayers} accentColor="red" />}
+
+        {/* Actions */}
+        <Link
+          href="/scoreboard"
+          onClick={onClose}
+          className="mb-2.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 py-3.5 text-sm font-extrabold text-black shadow-lg shadow-amber-500/25 transition hover:bg-amber-400 active:scale-95"
+        >
+          Volledig klassement
+        </Link>
+        <button
+          onClick={onClose}
+          className="w-full rounded-2xl py-3 text-sm font-medium text-gray-500 transition hover:text-gray-300"
+        >
+          Sluiten
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EndScreen({
+  user,
+  endStats,
+  podiumPlayers,
+  cfPodiumPlayers,
+}: {
+  user: User;
+  endStats?: { challengeRank: number; cfRank: number; totalPlayers: number };
+  podiumPlayers?: PodiumPlayer[];
+  cfPodiumPlayers?: PodiumPlayer[];
+}) {
+  const [showPodium, setShowPodium] = useState(false);
+  const msg = endStats ? getEndMessage(endStats.challengeRank, endStats.cfRank) : null;
+
+  return (
+    <div className="flex min-h-[calc(100dvh-140px)] flex-col items-center justify-start pt-2">
+      {/* Glow backdrop */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-1/2 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-amber-500/10 blur-3xl" />
+        <div className="absolute left-1/4 bottom-1/3 h-64 w-64 rounded-full bg-orange-600/8 blur-3xl" />
+        <div className="absolute right-1/4 top-1/2 h-48 w-48 rounded-full bg-yellow-300/8 blur-2xl" />
+      </div>
+
+      {/* Minimal top-right logout */}
+      <div className="mb-4 flex w-full justify-end">
+        <form action={logout}>
+          <button className="rounded-lg bg-slate-800/60 px-2.5 py-1.5 text-gray-500 transition hover:bg-slate-700 hover:text-gray-300" title="Logout">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
+        </form>
+      </div>
+
+      {/* Hero — avatar + title */}
+      <div className="mb-6 flex flex-col items-center text-center">
+        <div className="relative mb-4">
+          {/* Multi-layer glow */}
+          <div className="absolute -inset-4 rounded-full bg-amber-500/15 blur-2xl animate-pulse" />
+          <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-amber-400/30 to-orange-500/20 blur-lg" />
+          {/* Gold border ring */}
+          <div className="relative rounded-full p-[3px] bg-gradient-to-br from-amber-400 via-yellow-300 to-orange-500 shadow-2xl shadow-amber-500/40">
+            {user.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt=""
+                className="h-28 w-28 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-900 text-6xl">
+                {user.emoji || "🎮"}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <h2
+          className="text-4xl font-black tracking-tight text-white"
+          style={{ textShadow: "0 0 40px rgba(245,158,11,0.5)" }}
+        >
+          't Zit erop, {user.name}!
+        </h2>
+        <p className="mt-1.5 text-xs font-bold text-amber-400/60 tracking-[0.25em] uppercase">Tenerife 2026</p>
+      </div>
+
+      {/* Survivor trophy — for everyone */}
+      <div className="mb-5 w-full overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-800/80 to-slate-900/80 px-4 py-5 text-center shadow-xl backdrop-blur">
+        <div className="relative inline-block">
+          <span className="text-6xl" style={{ filter: "drop-shadow(0 0 20px rgba(245,158,11,0.8))" }}>🏆</span>
+          <div className="absolute -inset-4 -z-10 rounded-full bg-amber-500/20 blur-xl" />
+        </div>
+        <p className="mt-3 text-base font-extrabold text-white tracking-tight">Tenerife 2026 Survivor</p>
+        <p className="mt-0.5 text-xs text-amber-400/60">Proficiat! Ge hebt het allemaal overleefd makkerke</p>
+      </div>
+
+      {/* Rank badges */}
+      {endStats && (
+        <div className="mb-4 grid w-full grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-amber-500/10 to-slate-800/60 px-3 py-4 text-center shadow-lg">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400/60">🎯 Challenges</p>
+            <p className="mt-2 text-4xl font-black text-white">{rankEmoji(endStats.challengeRank)}</p>
+            <p className="mt-1 text-xl font-black text-white">#{endStats.challengeRank}</p>
+            <p className="text-[10px] text-gray-500">van {endStats.totalPlayers}</p>
+          </div>
+          <div className="rounded-2xl border border-red-500/25 bg-gradient-to-b from-red-500/10 to-slate-800/60 px-3 py-4 text-center shadow-lg">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-red-400/60">👲 Chinese Fucking</p>
+            <p className="mt-2 text-4xl font-black text-white">{rankEmoji(endStats.cfRank)}</p>
+            <p className="mt-1 text-xl font-black text-white">#{endStats.cfRank}</p>
+            <p className="text-[10px] text-gray-500">van {endStats.totalPlayers}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Personal verdict */}
+      {msg && (
+        <div className="mb-5 w-full rounded-2xl border border-amber-500/15 bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-4 shadow-xl backdrop-blur">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-400/70">⚡ Uw eindverdict</p>
+          <p className="text-sm leading-relaxed text-gray-100">{msg}</p>
+        </div>
+      )}
+
+      {/* Podium modal */}
+      {showPodium && (
+        <PodiumModal
+          challengePlayers={podiumPlayers ?? []}
+          cfPlayers={cfPodiumPlayers ?? []}
+          onClose={() => setShowPodium(false)}
+        />
+      )}
+
+      {/* CTA buttons */}
+      <div className="w-full space-y-2.5">
+        <button
+          onClick={() => setShowPodium(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 py-3.5 text-base font-extrabold text-black shadow-lg shadow-amber-500/30 transition hover:bg-amber-400 active:scale-95"
+        >
+          🏆 Eindklassement
+        </button>
+        <Link
+          href="/gallery"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-600/80 bg-slate-800/80 py-3.5 text-base font-bold text-white transition hover:bg-slate-700 active:scale-95"
+        >
+          📸 Foto&apos;s terugkijken
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardClient({
   user,
   assignments: initial,
   pendingConfirmations: initialPending,
   players: initialPlayers,
+  endStats,
+  podiumPlayers,
+  cfPodiumPlayers,
 }: {
   user: User;
   assignments: Assignment[];
   pendingConfirmations: PendingConfirmation[];
   players: { name: string; emoji: string; avatar_url: string | null }[];
+  endStats?: { challengeRank: number; cfRank: number; totalPlayers: number };
+  podiumPlayers?: PodiumPlayer[];
+  cfPodiumPlayers?: PodiumPlayer[];
 }) {
   const [assignments, setAssignments] = useState(initial);
   const [pending, setPending] = useState(initialPending);
@@ -83,6 +395,8 @@ export default function DashboardClient({
   const [emojiInput, setEmojiInput] = useState(user.emoji || "");
   const [uploading, setUploading] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<{ name: string; url: string } | null>(null);
+  const [challengeCollapsed, setChallengeCollapsed] = useState(false);
+  const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(true);
 
   const gameStatus = getGameStatus();
   const currentDay = getCurrentDay();
@@ -214,7 +528,8 @@ export default function DashboardClient({
       {gameStatus === "active" && <RandomImage />}
       {gameStatus === "active" && <EasterEggs />}
       <div className="relative z-10 mx-auto max-w-lg">
-        {/* Header / Profile */}
+        {/* Header / Profile — hidden on end screen */}
+        {gameStatus !== "after" && (
         <div className="mb-5 rounded-2xl border border-slate-700/60 bg-gradient-to-r from-slate-800/80 via-slate-800/50 to-slate-800/80 p-4 backdrop-blur">
           <div className="flex items-center gap-3">
             {/* Avatar / Emoji */}
@@ -296,6 +611,7 @@ export default function DashboardClient({
             </div>
           )}
         </div>
+        )}
 
         {/* Before game */}
         {gameStatus === "before" && (
@@ -395,38 +711,10 @@ export default function DashboardClient({
 
         {/* After game */}
         {gameStatus === "after" && (
-          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-8 text-center backdrop-blur">
-            <p className="mb-2 text-6xl">🏆</p>
-            <h2 className="mb-2 text-2xl font-extrabold text-white">
-              Game Gedaan!
-            </h2>
-            <p className="text-gray-400">
-              Wa ne reis mannen! Check de finale scores.
-            </p>
-            <Link
-              href="/scoreboard"
-              className="mt-4 inline-block rounded-lg bg-amber-500 px-6 py-2 font-bold text-black transition hover:bg-amber-400"
-            >
-              🏆 Eindklassement
-            </Link>
-          </div>
+          <EndScreen user={user} endStats={endStats} podiumPlayers={podiumPlayers} cfPodiumPlayers={cfPodiumPlayers} />
         )}
 
-        {/* Game active but challenges not yet (evening of May 12 / day 1) */}
-        {gameStatus === "active" && currentDay && !challengesAvailable() && (
-          <div className="relative mt-8 flex flex-col items-center text-center">
-            <div className="absolute -inset-4 rounded-3xl bg-gradient-to-b from-slate-900/80 via-slate-900/60 to-transparent blur-sm -z-10" />
-            <h2 className="text-3xl font-black text-white drop-shadow-lg" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.8)" }}>
-              Welkom in Guido&apos;s fokhok!
-            </h2>
-            <p className="mt-2 text-base font-medium text-gray-200 drop-shadow" style={{ textShadow: "0 1px 10px rgba(0,0,0,0.8)" }}>
-              Let the games begin
-            </p>
-            <p className="mt-4 rounded-full bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 text-xs font-semibold text-amber-400 backdrop-blur-sm">
-              ⏳ Vanaf morgenvroeg 9u begint het voor echt...
-            </p>
-          </div>
-        )}
+        {/* Day 1 welcome — rendered as overlay below */}
 
         {/* During game - challenges available */}
         {gameStatus === "active" && currentDay && challengesAvailable() && (
@@ -434,41 +722,40 @@ export default function DashboardClient({
 
             {/* Peer Confirmations - only Anton sees this */}
             {user.name === "Anton" && pending.length > 0 && (
-              <div className="mb-6">
-                <h2 className="mb-3 text-lg font-bold text-amber-400">
-                  👑 Bevestig Deze (Anton)
-                </h2>
-                <div className="space-y-2">
+              <div className="mb-4">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-400/70">👑 Jouw goedkeuring gevraagd</p>
+                <div className="space-y-2.5">
                   {pending.map((p) => (
                     <div
                       key={p.id}
-                      className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 backdrop-blur"
+                      className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-amber-500/10 to-slate-800/80 p-4 shadow-lg"
                     >
-                      <div className="mb-2">
-                        <span className="text-xs text-amber-300">
-                          {p.users?.name} zegt:
-                        </span>
-                        <p className="font-semibold text-white">
-                          {p.challenges?.title}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {p.challenges?.description}
-                        </p>
+                      <div className="mb-3 flex items-start gap-3">
+                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-lg">
+                          👤
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-amber-300">{p.users?.name} zegt: gedaan!</p>
+                          <p className="mt-0.5 font-bold text-white leading-snug">{p.challenges?.title}</p>
+                          {p.challenges?.description && (
+                            <p className="mt-0.5 text-xs text-gray-400 leading-snug">{p.challenges.description}</p>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleConfirm(p.id)}
                           disabled={loading === p.id}
-                          className="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                          className="flex-1 rounded-xl bg-emerald-500 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
                         >
-                          ✅ Klopt
+                          ✅ Alleej dan
                         </button>
                         <button
                           onClick={() => handleReject(p.id)}
                           disabled={loading === p.id}
-                          className="flex-1 rounded-lg bg-red-600/80 py-2 text-sm font-bold text-white transition hover:bg-red-500 disabled:opacity-50"
+                          className="flex-1 rounded-xl border border-red-500/30 bg-red-900/30 py-2.5 text-sm font-extrabold text-red-400 transition hover:bg-red-900/50 active:scale-95 disabled:opacity-50"
                         >
-                          ❌ Gelansen
+                          ❌ Niejet jom
                         </button>
                       </div>
                     </div>
@@ -549,73 +836,106 @@ export default function DashboardClient({
               </button>
             </div>
           ) : (
-            <div
-              className="border-t border-slate-700 bg-slate-900 px-4 pt-3"
-              style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-            >
-              <div className="mx-auto max-w-lg space-y-3">
-                {active.map((a) => (
-                  <div
-                    key={a.id}
-                    className="rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-lg"
-                  >
-                    <div className="mb-1 flex items-center justify-between">
-                      <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-bold text-amber-400">
-                        {a.challenges?.categories?.name || "Challenge"}
-                      </span>
-                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-400">
-                        +{a.challenges?.points}pts
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-extrabold text-white">
-                      {a.challenges?.title}
-                    </h3>
-                    {a.target_player_name && (
-                      <p className="mt-0.5 text-sm font-semibold text-orange-400">
-                        🎯 Op: {a.target_player_name}
-                      </p>
-                    )}
-                    {a.challenges?.description && (
-                      <p className="mt-1 text-sm text-gray-400">
-                        {a.challenges.description}
-                      </p>
-                    )}
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        onClick={() => handleComplete(a.id)}
-                        disabled={loading === a.id}
-                        className="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-50"
-                      >
-                        ✅ Gedaan!
-                      </button>
-                      <button
-                        onClick={() => handleSkip(a.id)}
-                        disabled={loading === a.id}
-                        className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/30 disabled:opacity-50"
-                      >
-                        Skip (-10)
-                      </button>
-                    </div>
-                  </div>
-                ))}
+            <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50 }}>
+              {/* Collapse handle */}
+              <button
+                className="w-full border-t border-slate-700/80 bg-slate-900/95 px-4 py-2 backdrop-blur-sm"
+                onClick={() => setChallengeCollapsed((c) => !c)}
+              >
+                <div className="mx-auto flex max-w-lg items-center justify-between">
+                  {active.length > 0 ? (
+                    <>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="shrink-0 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+                          {active[0].challenges?.categories?.name || "Challenge"}
+                        </span>
+                        <span className="truncate text-sm font-bold text-white">
+                          {active[0].challenges?.title}
+                        </span>
+                      </div>
+                      <div className="ml-2 flex shrink-0 items-center gap-2">
+                        <span className="text-xs font-bold text-amber-400">+{active[0].challenges?.points}pts</span>
+                        <span className="text-[10px] text-gray-500">{challengeCollapsed ? "▲" : "▼"}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs font-medium text-amber-400">⏳ Wachten op bevestiging van Anton</span>
+                      <span className="text-[10px] text-gray-500">{challengeCollapsed ? "▲" : "▼"}</span>
+                    </>
+                  )}
+                </div>
+              </button>
 
-                {pendingOwn.map((a) => (
-                  <div
-                    key={a.id}
-                    className="rounded-xl border border-amber-500/30 bg-slate-800/60 p-4 opacity-80"
-                  >
-                    <span className="text-xs font-medium text-amber-400">
-                      ⏳ Wachten op bevestiging van Anton
-                    </span>
-                    <h3 className="font-bold text-white">
-                      {a.challenges?.title}
-                    </h3>
-                    <p className="text-xs text-gray-500">
-                      +{a.challenges?.points}pts na bevestiging
-                    </p>
+              {/* Expanded content */}
+              {!challengeCollapsed && (
+                <div
+                  className="bg-slate-900/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm"
+                >
+                  <div className="mx-auto max-w-lg space-y-3">
+                    {active.map((a) => (
+                      <div
+                        key={a.id}
+                        className="rounded-2xl border border-slate-600/60 bg-gradient-to-b from-slate-800 to-slate-800/80 p-4 shadow-xl"
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                            difficultyColor[a.challenges?.difficulty as keyof typeof difficultyColor] ?? "bg-slate-700 text-gray-300"
+                          }`}>
+                            {a.challenges?.categories?.name || "Challenge"}
+                          </span>
+                          <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-bold text-amber-400">
+                            +{a.challenges?.points}pts
+                          </span>
+                        </div>
+                        <h3 className="text-xl font-extrabold leading-tight text-white">
+                          {a.challenges?.title}
+                        </h3>
+                        {a.target_player_name && (
+                          <p className="mt-1 text-sm font-semibold text-orange-400">
+                            🎯 Target: {a.target_player_name}
+                          </p>
+                        )}
+                        {a.challenges?.description && (
+                          <p className="mt-1.5 text-sm leading-relaxed text-gray-400">
+                            {a.challenges.description}
+                          </p>
+                        )}
+                        <div className="mt-4 flex gap-2">
+                          <button
+                            onClick={() => handleComplete(a.id)}
+                            disabled={loading === a.id}
+                            className="flex-1 rounded-xl bg-emerald-500 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
+                          >
+                            {loading === a.id ? "..." : "✅ Gedaan!"}
+                          </button>
+                          <button
+                            onClick={() => handleSkip(a.id)}
+                            disabled={loading === a.id}
+                            className="rounded-xl border border-red-500/20 bg-red-900/40 px-4 py-3 text-sm font-bold text-red-400 transition hover:bg-red-900/60 disabled:opacity-50"
+                          >
+                            Skip (-10)
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {pendingOwn.map((a) => (
+                      <div
+                        key={a.id}
+                        className="rounded-2xl border border-amber-500/20 bg-slate-800/60 p-4"
+                      >
+                        <div className="mb-1 flex items-center gap-2">
+                          <span className="animate-pulse text-sm">⏳</span>
+                          <span className="text-xs font-semibold text-amber-400">Wachten op bevestiging van Anton</span>
+                        </div>
+                        <h3 className="font-bold text-white">{a.challenges?.title}</h3>
+                        <p className="mt-0.5 text-xs text-gray-500">+{a.challenges?.points}pts na bevestiging</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </>
@@ -646,6 +966,32 @@ export default function DashboardClient({
               className="mt-2 rounded-lg bg-slate-700 px-6 py-2 text-sm font-medium text-gray-300 transition hover:bg-slate-600"
             >
               Sluiten
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Day 1 welcome overlay */}
+      {gameStatus === "active" && currentDay && !challengesAvailable() && showWelcomeOverlay && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm rounded-2xl border border-amber-500/30 bg-gradient-to-b from-slate-800 to-slate-900 p-6 shadow-2xl text-center">
+            <button
+              onClick={() => setShowWelcomeOverlay(false)}
+              className="absolute right-3 top-3 rounded-lg bg-slate-700/60 px-2.5 py-1 text-xs font-medium text-gray-400 transition hover:bg-slate-700"
+            >
+              ✕ Sluiten
+            </button>
+            <p className="mb-3 text-5xl">🏝️</p>
+            <h2 className="text-2xl font-black text-white">Welkom in Guido&apos;s fokhok!</h2>
+            <p className="mt-2 text-sm font-medium text-gray-300">Let the games begin</p>
+            <div className="mt-4 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-400">
+              ⏳ Vanaf morgenvroeg 9u begint het voor echt...
+            </div>
+            <button
+              onClick={() => setShowWelcomeOverlay(false)}
+              className="mt-4 w-full rounded-xl bg-amber-500 py-2.5 text-sm font-extrabold text-black transition hover:bg-amber-400 active:scale-95"
+            >
+              Let&apos;s go! 🤙
             </button>
           </div>
         </div>

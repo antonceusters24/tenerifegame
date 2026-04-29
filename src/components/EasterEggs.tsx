@@ -11,16 +11,15 @@ type EasterEgg = {
 const EASTER_EGGS: EasterEgg[] = [
   { trigger: "Klik hier", response: "Good boy 🐶", emoji: "👆" },
   { trigger: "Niet klikken!", response: "Ge luistert ook nooit eh 🙄", emoji: "🚫" },
-  { trigger: "Geheim bericht", response: "Anton is de beste 👑", emoji: "✉️" },
-  { trigger: "Druk hier voor gratis bier", response: "Grapjas. Ga zelf halen 🍺", emoji: "🍺" },
-  { trigger: "Tik 3x", response: "1x was genoeg sukkelaar 😂", emoji: "👈" },
-  { trigger: "Wie wint er?", response: "Nie gij in elk geval 💀", emoji: "🤔" },
-  { trigger: "Klik voor wijsheid", response: "Wie nie drinkt, verliest punten. - Confucius", emoji: "🧠" },
-  { trigger: "Open mij", response: "Proficiat! Gij hebt niks gewonnen 🎉", emoji: "🎁" },
-  { trigger: "Sssst...", response: "DEANSEN WANSEN ERANSEN! 📢", emoji: "🤫" },
-  { trigger: "Geluksklik", response: "Ge hebt nu 7 jaar schoonheid... of nie", emoji: "🍀" },
-  { trigger: "Knop", response: "Waarvoor dient deze knop eigenlijk? Niemand weet het.", emoji: "🔘" },
-  { trigger: "Druk voor motivatie", response: "Gij kunt da! Of toch nie. Idk.", emoji: "💪" },
+  { trigger: "Geheim bericht", response: "Anton is the GOAT 👑", emoji: "✉️" },
+  { trigger: "Druk hier voor gratis bier", response: "Neje he. Gaat da zelf halen en pakt voor ons ook iets mee🍺", emoji: "🍺" },
+  { trigger: "Tik 3x", response: "1x was genoeg sukkeleir 😂", emoji: "👈" },
+  { trigger: "Wie wint er?", response: "Gij nie kanker mast", emoji: "🤔" },
+  { trigger: "Klik voor wijsheid", response: "Wie nie drinkt, verliest punten", emoji: "🧠" },
+  { trigger: "Open mij", response: "Proficiat! Ge hebt just niks gewonnen 🎉", emoji: "🎁" },
+  { trigger: "Sssst...", response: "Homoooooooow 📢", emoji: "🤫" },
+  { trigger: "Knock knock... Who's there?", response: "Uw dikke moeder jongeuh", emoji: "🔘" },
+  { trigger: "Druk voor motivatie", response: "Fucking loser, nietsnut, platteeuhhh", emoji: "💪" },
 ];
 
 export default function EasterEggs() {

@@ -117,155 +117,111 @@ export default function ScoreboardClient({
 
         {/* Challenge Scoreboard */}
         {tab === "challenge" && (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {entries.map((entry, i) => {
               const isExpanded = expanded === entry.user_id;
               const playerAssignments = getPlayerAssignments(entry.user_id);
               const isOwnProfile = entry.user_id === user.id;
               const activeOnes = isOwnProfile
-                ? playerAssignments.filter(
-                    (a) => a.status === "active" || a.status === "pending"
-                  )
+                ? playerAssignments.filter((a) => a.status === "active" || a.status === "pending")
                 : [];
-              const completedOnes = playerAssignments.filter(
-                (a) => a.status === "completed"
-              );
-              const skippedOnes = playerAssignments.filter(
-                (a) => a.status === "skipped"
-              );
+              const completedOnes = playerAssignments.filter((a) => a.status === "completed");
+              const skippedOnes = playerAssignments.filter((a) => a.status === "skipped");
 
-              const medals = ["🥇", "🥈", "🥉"];
-              const rankTitles = ["Legend", "Leeuw", "Matig ze", "Wa ne sukkeleir"];
-              const rankTitleColors = ["text-amber-400", "text-slate-300", "text-orange-400", "text-red-400"];
-              const rankColors = [
-                "from-amber-500/20 to-transparent border-amber-500/40",
-                "from-slate-400/10 to-transparent border-slate-400/30",
-                "from-orange-700/10 to-transparent border-orange-700/30",
-                "from-red-900/20 to-transparent border-red-500/30",
+              const RANK_META = [
+                { medal: "🥇", title: "Legend",        titleColor: "text-amber-400",  card: "border-amber-500/50 bg-gradient-to-r from-amber-500/15 via-slate-800/60 to-transparent", glow: "shadow-amber-500/15" },
+                { medal: "🥈", title: "Leeuw",         titleColor: "text-slate-300",   card: "border-slate-500/40 bg-gradient-to-r from-slate-500/10 via-slate-800/60 to-transparent", glow: "" },
+                { medal: "🥉", title: "Matig ze",      titleColor: "text-orange-400",  card: "border-orange-700/30 bg-gradient-to-r from-orange-700/8 via-slate-800/60 to-transparent", glow: "" },
+                { medal: "💀", title: "Wa ne sukkeleir", titleColor: "text-red-400",   card: "border-red-900/40 bg-gradient-to-r from-red-900/10 via-slate-800/60 to-transparent",    glow: "" },
               ];
-              const rankAnimations = [
-                "animate-pulse",
-                "",
-                "",
-                "animate-[wiggle_1s_ease-in-out_infinite]",
-              ];
+              const rm = RANK_META[Math.min(i, 3)];
 
               return (
-                <div key={entry.user_id} className={rankAnimations[Math.min(i, 3)]}>
+                <div key={entry.user_id}>
                   <div
                     onClick={() => toggle(entry.user_id)}
-                    className={`w-full cursor-pointer rounded-xl border bg-gradient-to-r p-4 text-left transition active:scale-[0.98] ${
-                      rankColors[Math.min(i, 3)]
-                    } ${isExpanded ? "ring-1 ring-amber-500/50" : ""}`}
+                    className={`w-full cursor-pointer rounded-2xl border p-4 text-left shadow-lg transition active:scale-[0.98] ${rm.card} ${rm.glow ? `shadow-lg ${rm.glow}` : ""} ${isExpanded ? "rounded-b-none" : ""}`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="min-w-[2.5rem] flex flex-col items-center">
-                          <span className="text-2xl">
-                            {medals[i] || `#${i + 1}`}
-                          </span>
-                          <span className={`text-[9px] font-bold ${rankTitleColors[Math.min(i, 3)]}`}>
-                            {rankTitles[Math.min(i, 3)]}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-lg font-extrabold text-white flex items-center gap-1.5">
-                            {avatarMap[entry.name] ? (
-                              <span className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setViewingProfile({ name: entry.name, url: avatarMap[entry.name]! }); }}>
-                                <img src={avatarMap[entry.name]!} alt="" className="w-9 h-9 rounded-full object-cover ring-2 ring-amber-500/50 active:scale-110 transition" />
-                              </span>
-                            ) : (
-                              <span className="text-2xl">{emojiMap[entry.name] || "🎮"}</span>
-                            )} {entry.name}
-                            {entry.name === user.name && (
-                              <span className="ml-2 text-xs font-normal text-gray-500">
-                                (gij)
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {entry.completed_count} gedaan · {entry.skipped_count} geskipt
-                          </p>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      {/* Rank column */}
+                      <div className="flex w-10 shrink-0 flex-col items-center gap-0.5">
+                        <span className="text-2xl leading-none">{rm.medal}</span>
+                        <span className={`text-[9px] font-bold leading-none ${rm.titleColor}`}>{rm.title}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <p className={`text-3xl font-black ${entry.total_points < 0 ? "text-red-400" : "text-amber-400"}`}>
+
+                      {/* Avatar */}
+                      {avatarMap[entry.name] ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setViewingProfile({ name: entry.name, url: avatarMap[entry.name]! }); }}
+                          className="shrink-0"
+                        >
+                          <img src={avatarMap[entry.name]!} alt="" className="h-11 w-11 rounded-full object-cover ring-2 ring-amber-500/40 transition active:scale-110" />
+                        </button>
+                      ) : (
+                        <span className="shrink-0 text-3xl leading-none">{emojiMap[entry.name] || "🎮"}</span>
+                      )}
+
+                      {/* Name + stats */}
+                      <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-1.5 truncate text-base font-extrabold text-white">
+                          {entry.name}
+                          {entry.name === user.name && <span className="text-xs font-normal text-gray-500">(gij)</span>}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {entry.completed_count} gedaan · {entry.skipped_count} geskipt
+                        </p>
+                      </div>
+
+                      {/* Score */}
+                      <div className="flex shrink-0 items-center gap-2">
+                        <p className={`text-3xl font-black tabular-nums ${entry.total_points < 0 ? "text-red-400" : "text-amber-400"}`}>
                           {entry.total_points}
                         </p>
-                        <span className="text-xs text-gray-600">
-                          {isExpanded ? "▲" : "▼"}
-                        </span>
+                        <span className="text-[10px] text-gray-600">{isExpanded ? "▲" : "▼"}</span>
                       </div>
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="mt-1 space-y-1 rounded-b-xl border border-t-0 border-slate-700 bg-slate-800/40 p-3">
+                    <div className="rounded-b-2xl border border-t-0 border-slate-700/60 bg-slate-800/50 p-3 space-y-2">
                       {activeOnes.length > 0 && (
-                        <div className="mb-2">
-                          <p className="mb-1 text-xs font-bold uppercase text-amber-400">
-                            Uw actieve challenge
-                          </p>
+                        <div>
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">Actieve challenge</p>
                           {activeOnes.map((a) => (
-                            <div
-                              key={a.id}
-                              className="rounded-lg bg-slate-700/30 px-3 py-1.5 text-sm text-gray-300"
-                            >
+                            <div key={a.id} className="rounded-lg bg-amber-500/8 px-3 py-1.5 text-sm text-gray-300">
                               🎯 {a.challenges?.title || "Unknown"}
                             </div>
                           ))}
                         </div>
                       )}
-
                       {completedOnes.length > 0 && (
-                        <div className="mb-2">
-                          <p className="mb-1 text-xs font-bold uppercase text-emerald-400">
-                            Gedaan ✅
-                          </p>
-                          {completedOnes.map((a) => (
-                            <div
-                              key={a.id}
-                              className="flex items-center justify-between rounded-lg bg-emerald-500/5 px-3 py-1.5 text-sm"
-                            >
-                              <span className="text-gray-300">
-                                {a.challenges?.title || "Unknown"}
-                                <span className="ml-2 text-xs text-gray-600">
-                                  Dag {a.day}
-                                </span>
-                              </span>
-                              <span className="text-xs font-bold text-emerald-400">
-                                +{a.challenges?.points}
-                              </span>
-                            </div>
-                          ))}
+                        <div>
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">Gedaan ✅</p>
+                          <div className="space-y-1">
+                            {completedOnes.map((a) => (
+                              <div key={a.id} className="flex items-center justify-between rounded-lg bg-emerald-500/8 px-3 py-1.5 text-sm">
+                                <span className="truncate text-gray-300">{a.challenges?.title || "Unknown"} <span className="text-xs text-gray-600">Dag {a.day}</span></span>
+                                <span className="ml-2 shrink-0 text-xs font-bold text-emerald-400">+{a.challenges?.points}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
-
                       {skippedOnes.length > 0 && (
                         <div>
-                          <p className="mb-1 text-xs font-bold uppercase text-red-400">
-                            Geskipt ❌
-                          </p>
-                          {skippedOnes.map((a) => (
-                            <div
-                              key={a.id}
-                              className="flex items-center justify-between rounded-lg bg-red-500/5 px-3 py-1.5 text-sm"
-                            >
-                              <span className="text-gray-500 line-through">
-                                {a.challenges?.title || "Unknown"}
-                              </span>
-                              <span className="text-xs font-bold text-red-400">
-                                -10
-                              </span>
-                            </div>
-                          ))}
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-red-400">Geskipt ❌</p>
+                          <div className="space-y-1">
+                            {skippedOnes.map((a) => (
+                              <div key={a.id} className="flex items-center justify-between rounded-lg bg-red-500/8 px-3 py-1.5 text-sm">
+                                <span className="truncate text-gray-500 line-through">{a.challenges?.title || "Unknown"}</span>
+                                <span className="ml-2 shrink-0 text-xs font-bold text-red-400">-10</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
-
                       {playerAssignments.length === 0 && (
-                        <p className="py-2 text-center text-sm text-gray-500">
-                          Nog niks gedaan, tammen hol
-                        </p>
+                        <p className="py-2 text-center text-sm text-gray-500">Nog niks gedaan, tammen hol</p>
                       )}
                     </div>
                   )}
@@ -273,7 +229,7 @@ export default function ScoreboardClient({
               );
             })}
             {entries.length === 0 && (
-              <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-8 text-center text-gray-400">
+              <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-8 text-center text-gray-400">
                 Nog geen scores — begin te spelen mannen!
               </div>
             )}
@@ -283,109 +239,80 @@ export default function ScoreboardClient({
         {/* Chinese Fucking Scoreboard */}
         {tab === "chinese" && (
           <div>
-            <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-center">
-              <p className="text-lg font-extrabold text-red-400">
-                👲 Chinese Fucking 👲
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
+            <div className="mb-4 rounded-2xl border border-red-500/20 bg-gradient-to-r from-red-500/10 to-transparent p-3 text-center">
+              <p className="text-lg font-extrabold text-red-400">👲 Chinese Fucking 👲</p>
+              <p className="mt-0.5 text-xs text-gray-500">
                 {isAnton ? "Voeg punten toe per sessie" : "Alleen onzen Anton past scores aan"}
               </p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {[...cfScores]
                 .sort((a, b) => (b.points || 0) - (a.points || 0) || (b.wins || 0) - (a.wins || 0))
                 .map((player, i) => {
                   const pts = player.points || 0;
                   const wins = player.wins || 0;
-                  const cfRankTitles = ["Legend", "Leeuw", "Matig ze", "Wa ne sukkeleir"];
-                  const cfRankColors = ["text-red-400", "text-slate-300", "text-orange-400", "text-gray-500"];
-                  const cfCardColors = [
-                    "border-red-500/40 bg-gradient-to-r from-red-500/10 to-transparent",
-                    "border-slate-400/30 bg-gradient-to-r from-slate-400/5 to-transparent",
-                    "border-orange-700/30 bg-gradient-to-r from-orange-700/5 to-transparent",
-                    "border-red-900/30 bg-gradient-to-r from-red-900/10 to-transparent",
+                  const CF_META = [
+                    { medal: "🥇", title: "Koning Fucker",   titleColor: "text-red-400",    card: "border-red-500/40 bg-gradient-to-r from-red-500/15 via-slate-800/60 to-transparent" },
+                    { medal: "🥈", title: "Goeie Poeper", titleColor: "text-slate-300",   card: "border-slate-500/30 bg-gradient-to-r from-slate-500/8 via-slate-800/60 to-transparent" },
+                    { medal: "🥉", title: "Chinees Poepslaafje",titleColor: "text-orange-400",  card: "border-orange-700/30 bg-gradient-to-r from-orange-700/8 via-slate-800/60 to-transparent" },
+                    { medal: "💀", title: "ik word Chinees GEpoept",        titleColor: "text-gray-500",   card: "border-red-900/30 bg-gradient-to-r from-red-900/8 via-slate-800/60 to-transparent" },
                   ];
-                  const cfAnims = ["animate-pulse", "", "", "animate-[wiggle_1s_ease-in-out_infinite]"];
+                  const cm = CF_META[Math.min(i, 3)];
+
                   return (
-                    <div
-                      key={player.player_name}
-                      className={`rounded-xl border p-4 transition ${cfCardColors[Math.min(i, 3)]} ${cfAnims[Math.min(i, 3)]}`}
-                    >
-                      <div className="mb-1">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${cfRankColors[Math.min(i, 3)]}`}>
-                          #{i + 1} · {cfRankTitles[Math.min(i, 3)]}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <p className="text-lg font-extrabold text-white flex items-center gap-1.5">
-                              {avatarMap[player.player_name] ? (
-                                <span className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setViewingProfile({ name: player.player_name, url: avatarMap[player.player_name]! }); }}>
-                                  <img src={avatarMap[player.player_name]!} alt="" className="w-9 h-9 rounded-full object-cover ring-2 ring-amber-500/50 active:scale-110 transition" />
-                                </span>
-                              ) : (
-                                <span className="text-2xl">{emojiMap[player.player_name] || "🎮"}</span>
-                              )} {player.player_name}
-                              {player.player_name === user.name && (
-                                <span className="ml-2 text-xs font-normal text-gray-500">(gij)</span>
-                              )}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              <span className="text-amber-400">🏆 {wins} wins</span>
-                            </p>
-                          </div>
+                    <div key={player.player_name} className={`rounded-2xl border p-4 shadow-lg ${cm.card}`}>
+                      <div className="flex items-center gap-3">
+                        {/* Rank */}
+                        <div className="flex w-10 shrink-0 flex-col items-center gap-0.5">
+                          <span className="text-2xl leading-none">{cm.medal}</span>
+                          <span className={`text-[9px] font-bold leading-none ${cm.titleColor}`}>{cm.title}</span>
                         </div>
 
-                        <p className={`min-w-[3rem] text-right text-3xl font-black ${pts > 0 ? "text-emerald-400" : "text-gray-400"}`}>
+                        {/* Avatar */}
+                        {avatarMap[player.player_name] ? (
+                          <button
+                            onClick={() => setViewingProfile({ name: player.player_name, url: avatarMap[player.player_name]! })}
+                            className="shrink-0"
+                          >
+                            <img src={avatarMap[player.player_name]!} alt="" className="h-11 w-11 rounded-full object-cover ring-2 ring-red-500/40 transition active:scale-110" />
+                          </button>
+                        ) : (
+                          <span className="shrink-0 text-3xl leading-none">{emojiMap[player.player_name] || "🎮"}</span>
+                        )}
+
+                        {/* Name + wins */}
+                        <div className="min-w-0 flex-1">
+                          <p className="flex items-center gap-1.5 truncate text-base font-extrabold text-white">
+                            {player.player_name}
+                            {player.player_name === user.name && <span className="text-xs font-normal text-gray-500">(gij)</span>}
+                          </p>
+                          <p className="text-xs text-amber-400/80">🏆 {wins} {wins === 1 ? "win" : "wins"}</p>
+                        </div>
+
+                        {/* Points */}
+                        <p className={`shrink-0 text-3xl font-black tabular-nums ${pts > 0 ? "text-emerald-400" : "text-gray-400"}`}>
                           {pts}
                         </p>
                       </div>
 
                       {/* Anton controls */}
                       {isAnton && (
-                        <div className="mt-3 flex items-center gap-2 border-t border-slate-700/50 pt-3">
-                          {/* Win buttons */}
+                        <div className="mt-3 flex items-center gap-2 border-t border-slate-700/40 pt-3">
                           <div className="flex gap-1">
-                            <button
-                              onClick={() => handleCF(player.player_name, "wins", 1)}
-                              disabled={cfLoading !== null}
-                              className="rounded bg-amber-600 px-2 py-1 text-xs font-bold text-white transition hover:bg-amber-500 active:scale-90 disabled:opacity-50"
-                            >
-                              🏆+
-                            </button>
-                            <button
-                              onClick={() => handleCF(player.player_name, "wins", -1)}
-                              disabled={cfLoading !== null}
-                              className="rounded bg-slate-700 px-2 py-1 text-xs text-gray-400 transition hover:bg-slate-600 active:scale-90 disabled:opacity-50"
-                            >
-                              🏆-
-                            </button>
+                            <button onClick={() => handleCF(player.player_name, "wins", 1)} disabled={cfLoading !== null} className="rounded-lg bg-amber-600/80 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-amber-500 active:scale-90 disabled:opacity-50">🏆+</button>
+                            <button onClick={() => handleCF(player.player_name, "wins", -1)} disabled={cfLoading !== null} className="rounded-lg bg-slate-700 px-2.5 py-1.5 text-xs text-gray-400 transition hover:bg-slate-600 active:scale-90 disabled:opacity-50">🏆-</button>
                           </div>
-
-                          {/* Points input */}
                           <div className="flex flex-1 gap-1">
                             <input
                               type="number"
                               inputMode="numeric"
                               placeholder="+/- punten"
                               value={pointsInput[player.player_name] || ""}
-                              onChange={(e) =>
-                                setPointsInput((prev) => ({
-                                  ...prev,
-                                  [player.player_name]: e.target.value,
-                                }))
-                              }
-                              className="w-full min-w-0 rounded border border-slate-600 bg-slate-700/50 px-2 py-1 text-sm text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none"
+                              onChange={(e) => setPointsInput((prev) => ({ ...prev, [player.player_name]: e.target.value }))}
+                              className="w-full min-w-0 rounded-lg border border-slate-600 bg-slate-700/50 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none"
                             />
-                            <button
-                              onClick={() => handleAddPoints(player.player_name)}
-                              disabled={cfLoading !== null || !pointsInput[player.player_name]}
-                              className="rounded bg-emerald-600 px-2 py-1 text-xs font-bold text-white transition hover:bg-emerald-500 active:scale-90 disabled:opacity-50"
-                            >
-                              ✓
-                            </button>
+                            <button onClick={() => handleAddPoints(player.player_name)} disabled={cfLoading !== null || !pointsInput[player.player_name]} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-500 active:scale-90 disabled:opacity-50">✓</button>
                           </div>
                         </div>
                       )}

@@ -1,25 +1,20 @@
 export const GAME_DATES = [
-  "2026-05-12",
-  "2026-05-13",
-  "2026-05-14",
-  "2026-05-15",
-  "2026-05-16",
-  "2026-05-17",
-  "2026-05-18",
+  "2026-05-12", // Dag 1 — aankomst
+  "2026-05-13", // Dag 2
+  "2026-05-14", // Dag 3
+  "2026-05-15", // Dag 4
+  "2026-05-16", // Dag 5
+  "2026-05-17", // Dag 6
+  "2026-05-18", // Dag 7 — finaal gevecht
 ];
 
 export const TRIP_START = "2026-05-12";
 
-// May 12 at 18:00 Tenerife (WEST = UTC+1) = 17:00 UTC
-// This is when the app goes "active" and countdown ends
+// Activation:   12 mei 17:00 UTC  → countdown ends, day 1 starts (no challenges yet)
+// Challenges:   13 mei 08:00 UTC  → day 1 challenges unlock
+// Game end:     18 mei 23:00 UTC  → end screen shows
 export const ACTIVATION_TIME = "2026-05-12T17:00:00Z";
-
-// May 13 at 09:00 Tenerife (WEST = UTC+1) = 08:00 UTC
-// This is when challenges become available
 const CHALLENGES_START = "2026-05-13T08:00:00Z";
-
-// May 19 at 00:00 Tenerife (WEST = UTC+1) = 23:00 UTC on May 18
-// This is when the game ends
 const GAME_END = "2026-05-18T23:00:00Z";
 
 export function getLocalDateString(): string {

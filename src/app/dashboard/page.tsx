@@ -34,6 +34,41 @@ export default async function DashboardPage() {
     .eq("role", "player")
     .order("name");
 
+  // End-screen ranks
+  const [{ data: scoreRows }, { data: cfRows }] = await Promise.all([
+    supabase.from("scoreboard").select("user_id, name, total_points").order("total_points", { ascending: false }),
+    supabase.from("chinese_fucking_scores").select("player_name, wins, points"),
+  ]);
+
+  let endStats: { challengeRank: number; cfRank: number; totalPlayers: number } | undefined;
+  let podiumPlayers: { name: string; avatar_url: string | null; emoji: string; total_points: number }[] = [];
+  let cfPodiumPlayers: { name: string; avatar_url: string | null; emoji: string; total_points: number }[] = [];
+  if (scoreRows && scoreRows.length > 0) {
+    const challengeRank = scoreRows.findIndex((s) => s.user_id === user.id) + 1 || scoreRows.length;
+    const sortedCf = [...(cfRows || [])].sort((a, b) => b.wins - a.wins || b.points - a.points);
+    const cfIdx = sortedCf.findIndex((s) => s.player_name === user.name);
+    const cfRank = cfIdx >= 0 ? cfIdx + 1 : sortedCf.length;
+    endStats = { challengeRank, cfRank, totalPlayers: scoreRows.length };
+    podiumPlayers = scoreRows.slice(0, 4).map((s) => {
+      const p = (players || []).find((pl) => pl.name === s.name);
+      return {
+        name: s.name,
+        avatar_url: p?.avatar_url ?? null,
+        emoji: p?.emoji ?? "🎮",
+        total_points: s.total_points,
+      };
+    });
+    cfPodiumPlayers = sortedCf.slice(0, 4).map((s) => {
+      const p = (players || []).find((pl) => pl.name === s.player_name);
+      return {
+        name: s.player_name,
+        avatar_url: p?.avatar_url ?? null,
+        emoji: p?.emoji ?? "🎮",
+        total_points: s.points ?? 0,
+      };
+    });
+  }
+
   return (
     <DashboardClient
       user={user}
@@ -42,6 +77,9 @@ export default async function DashboardPage() {
         (pendingConfirmations as unknown as PendingConfirmation[]) || []
       }
       players={players || []}
+      endStats={endStats}
+      podiumPlayers={podiumPlayers}
+      cfPodiumPlayers={cfPodiumPlayers}
     />
   );
 }
