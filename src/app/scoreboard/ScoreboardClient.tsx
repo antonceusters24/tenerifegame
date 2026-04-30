@@ -92,23 +92,23 @@ export default function ScoreboardClient({
         </div>
 
         {/* Tabs */}
-        <div className="mb-4 flex gap-2">
+        <div className="mb-4 flex rounded-2xl bg-slate-800/80 p-1 shadow-inner">
           <button
             onClick={() => setTab("challenge")}
-            className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+            className={`flex-1 rounded-xl px-4 py-3 text-sm font-extrabold tracking-wide transition-all duration-200 ${
               tab === "challenge"
-                ? "bg-amber-500 text-black shadow-lg"
-                : "bg-slate-800/60 text-gray-400 hover:bg-slate-700"
+                ? "bg-gradient-to-r from-amber-500 to-amber-400 text-black shadow-lg shadow-amber-500/25 scale-[1.02]"
+                : "text-gray-500 hover:text-gray-300"
             }`}
           >
             🎯 Challenge
           </button>
           <button
             onClick={() => setTab("chinese")}
-            className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+            className={`flex-1 rounded-xl px-4 py-3 text-sm font-extrabold tracking-wide transition-all duration-200 whitespace-nowrap ${
               tab === "chinese"
-                ? "bg-red-500 text-white shadow-lg"
-                : "bg-slate-800/60 text-gray-400 hover:bg-slate-700"
+                ? "bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg shadow-red-500/25 scale-[1.02]"
+                : "text-gray-500 hover:text-gray-300"
             }`}
           >
             👲 Chinese Fucking
@@ -239,12 +239,9 @@ export default function ScoreboardClient({
         {/* Chinese Fucking Scoreboard */}
         {tab === "chinese" && (
           <div>
-            <div className="mb-4 rounded-2xl border border-red-500/20 bg-gradient-to-r from-red-500/10 to-transparent p-3 text-center">
-              <p className="text-lg font-extrabold text-red-400">👲 Chinese Fucking 👲</p>
-              <p className="mt-0.5 text-xs text-gray-500">
-                {isAnton ? "Voeg punten toe per sessie" : "Alleen onzen Anton past scores aan"}
-              </p>
-            </div>
+            <p className="mb-3 text-center text-xs text-gray-500">
+              {isAnton ? "Voeg punten toe per sessie" : "Alleen onzen Anton past scores aan"}
+            </p>
 
             <div className="space-y-2.5">
               {[...cfScores]

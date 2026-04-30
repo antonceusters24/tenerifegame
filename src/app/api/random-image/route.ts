@@ -19,10 +19,10 @@ export async function GET() {
     const videos = files.filter((f) => /\.(mp4|mov|webm)$/i.test(f));
     const images = files.filter((f) => !/\.(mp4|mov|webm)$/i.test(f));
 
-    // Give videos ~40% chance when both types exist
+    // Give videos ~30% chance when both types exist
     let random: string;
     if (videos.length > 0 && images.length > 0) {
-      random = Math.random() < 0.4
+      random = Math.random() < 0.3
         ? videos[Math.floor(Math.random() * videos.length)]
         : images[Math.floor(Math.random() * images.length)];
     } else {
