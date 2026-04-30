@@ -36,10 +36,10 @@ function SlotMachine({ onComplete }: { onComplete: () => void }) {
       );
     }, 80);
 
-    const t1 = setTimeout(() => { stopped = 1; setSlots(prev => ["🍺", prev[1], prev[2]]); }, 800);
-    const t2 = setTimeout(() => { stopped = 2; setSlots(prev => ["🍺", "🍺", prev[2]]); }, 1400);
-    const t3 = setTimeout(() => { stopped = 3; clearInterval(interval); setSlots(["🍺", "🍺", "🍺"]); setLabel("JACKPOT! 🎰"); }, 2000);
-    const t4 = setTimeout(onComplete, 2800);
+    const t1 = setTimeout(() => { stopped = 1; setSlots(prev => ["🍺", prev[1], prev[2]]); }, 1400);
+    const t2 = setTimeout(() => { stopped = 2; setSlots(prev => ["🍺", "🍺", prev[2]]); }, 2400);
+    const t3 = setTimeout(() => { stopped = 3; clearInterval(interval); setSlots(["🍺", "🍺", "🍺"]); setLabel("JACKPOT! 🎰"); }, 3400);
+    const t4 = setTimeout(onComplete, 4800);
 
     return () => {
       clearInterval(interval);
@@ -75,10 +75,10 @@ function OpenBeer({ onComplete }: { onComplete: () => void }) {
   );
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase("pop"), 1200);
-    const t2 = setTimeout(() => setPhase("pour"), 1800);
-    const t3 = setTimeout(() => setPhase("done"), 2500);
-    const t4 = setTimeout(onComplete, 3200);
+    const t1 = setTimeout(() => setPhase("pop"), 1800);
+    const t2 = setTimeout(() => setPhase("pour"), 2800);
+    const t3 = setTimeout(() => setPhase("done"), 4000);
+    const t4 = setTimeout(onComplete, 5200);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -100,10 +100,10 @@ function OpenBeer({ onComplete }: { onComplete: () => void }) {
         {phase === "done" && "🎯"}
       </div>
       <p className="text-lg font-bold text-amber-400">
-        {phase === "shake" && "Shaking the beer..."}
-        {phase === "pop" && "PSSSHHH! 💨"}
-        {phase === "pour" && "Pouring..."}
-        {phase === "done" && "CHEERS! New challenge!"}
+        {phase === "shake" && "Solleke pakken"}
+        {phase === "pop" && "Aftrekken!"}
+        {phase === "pour" && "Kappeuuuh."}
+        {phase === "done" && "SOL!"}
       </p>
     </div>
   );
@@ -113,11 +113,11 @@ function Shotgun({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 800);
-    const t2 = setTimeout(() => setPhase(2), 1500);
-    const t3 = setTimeout(() => setPhase(3), 2200);
-    const t4 = setTimeout(() => setPhase(4), 2800);
-    const t5 = setTimeout(onComplete, 3500);
+    const t1 = setTimeout(() => setPhase(1), 1200);
+    const t2 = setTimeout(() => setPhase(2), 2400);
+    const t3 = setTimeout(() => setPhase(3), 3600);
+    const t4 = setTimeout(() => setPhase(4), 4600);
+    const t5 = setTimeout(onComplete, 5800);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -129,11 +129,11 @@ function Shotgun({ onComplete }: { onComplete: () => void }) {
 
   const frames = ["🍺", "🔑", "💨", "🍻", "💪"];
   const labels = [
-    "Pakt uw bier...",
-    "Steekt er een gat in...",
+    "Pakt nen bok",
+    "Gatje prikken...",
     "TREKKEN! TREKKEN!",
-    "ADJES!!! 🫗",
-    "ECHTE MAN! New challenge!",
+    "ADJEEUUUUH 🫗",
+    "Top he kameraad",
   ];
 
   return (
@@ -152,12 +152,12 @@ function Poker({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     const hand = ["🂡", "🂮", "🂭", "🂫", "🂪"];
-    const t1 = setTimeout(() => setCards(["🂡", "🂠", "🂠", "🂠", "🂠"]), 500);
-    const t2 = setTimeout(() => setCards(["🂡", "🂮", "🂠", "🂠", "🂠"]), 900);
-    const t3 = setTimeout(() => setCards(["🂡", "🂮", "🂭", "🂠", "🂠"]), 1300);
-    const t4 = setTimeout(() => setCards(["🂡", "🂮", "🂭", "🂫", "🂠"]), 1700);
-    const t5 = setTimeout(() => { setCards(hand); setLabel("ROYAL FLUSH! 👑"); }, 2100);
-    const t6 = setTimeout(onComplete, 3000);
+    const t1 = setTimeout(() => setCards(["🂡", "🂠", "🂠", "🂠", "🂠"]), 800);
+    const t2 = setTimeout(() => setCards(["🂡", "🂮", "🂠", "🂠", "🂠"]), 1500);
+    const t3 = setTimeout(() => setCards(["🂡", "🂮", "🂭", "🂠", "🂠"]), 2200);
+    const t4 = setTimeout(() => setCards(["🂡", "🂮", "🂭", "🂫", "🂠"]), 2900);
+    const t5 = setTimeout(() => { setCards(hand); setLabel("ROYAL FLUSH! 👑"); }, 3600);
+    const t6 = setTimeout(onComplete, 5200);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); clearTimeout(t6); };
   }, [onComplete]);
 
@@ -179,19 +179,19 @@ function Cigar({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 1000);
-    const t2 = setTimeout(() => setPhase(2), 2000);
-    const t3 = setTimeout(() => setPhase(3), 2800);
-    const t4 = setTimeout(onComplete, 3500);
+    const t1 = setTimeout(() => setPhase(1), 1600);
+    const t2 = setTimeout(() => setPhase(2), 3200);
+    const t3 = setTimeout(() => setPhase(3), 4600);
+    const t4 = setTimeout(onComplete, 6000);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, [onComplete]);
 
   const frames = ["🌬️", "⚡", "💨", "😎"];
   const labels = [
-    "Pakt uwen vape...",
-    "Zet aan...",
-    "Diiiepe trek...",
-    "Ge zijt ready. New challenge!",
+    "Pakt uwe vape...",
+    "Ne keer goe sleuren",
+    "Inhaleren...",
+    "Poahhhh heerlijk",
   ];
 
   return (
@@ -213,36 +213,91 @@ function Cigar({ onComplete }: { onComplete: () => void }) {
 
 function ArmWrestle({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
+  // armAngle: 0 = centre, negative = left winning, positive = right winning
+  const [armAngle, setArmAngle] = useState(0);
+  const [shaking, setShaking] = useState(false);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 800);
-    const t2 = setTimeout(() => setPhase(2), 1600);
-    const t3 = setTimeout(() => setPhase(3), 2400);
-    const t4 = setTimeout(onComplete, 3200);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
+    // phase 0: grip — arms locked upright
+    const t1 = setTimeout(() => setPhase(1), 1400);          // countdown
+    const t2 = setTimeout(() => { setPhase(2); setShaking(true); }, 2800); // battle starts
+    // battle: arms sway back and forth
+    const t3 = setTimeout(() => setArmAngle(-25), 3200);
+    const t4 = setTimeout(() => setArmAngle(20), 3900);
+    const t5 = setTimeout(() => setArmAngle(-30), 4500);
+    const t6 = setTimeout(() => setArmAngle(15), 5000);
+    const t7 = setTimeout(() => setArmAngle(-20), 5400);
+    // left arm slams down — winner!
+    const t8 = setTimeout(() => { setPhase(3); setShaking(false); setArmAngle(-80); }, 5900);
+    const t9 = setTimeout(onComplete, 7500);
+    return () => {
+      [t1,t2,t3,t4,t5,t6,t7,t8,t9].forEach(clearTimeout);
+    };
   }, [onComplete]);
 
   const labels = [
-    "Pakken... 🤝",
-    "3... 2... 1...",
-    "DRUKKEN!!!",
-    "💪 GEWONNEN! New challenge!",
+    "Handen vast... 🤝",
+    "3... 2... 1... DUWWWE!",
+    "PUSH PUSH PUSH!!!",
+    "💪 GEWONNEN! Nieuwe challenge!",
   ];
 
+  // Left arm (challenger): rotates from straight up toward the table on the right (positive angle = going down-right)
+  // Right arm (player): mirror image. We use armAngle to tilt both arms.
+  // armAngle negative = left arm winning (pushing right arm down), positive = right arm pushing back
+  const leftArmRotation = phase >= 2 ? armAngle : 0;
+  const rightArmRotation = phase >= 2 ? -armAngle : 0;
+
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="flex items-center gap-2">
-        <span className={`text-5xl transition-transform ${phase === 2 ? "-rotate-45" : ""} ${phase === 3 ? "-rotate-90" : ""}`}>
-          🤛
-        </span>
-        <span className={`text-5xl transition-transform ${phase >= 2 ? "animate-pulse" : ""}`}>
-          💥
-        </span>
-        <span className={`text-5xl transition-transform ${phase === 2 ? "rotate-12" : ""} ${phase === 3 ? "rotate-45 opacity-50" : ""}`}>
-          🤜
-        </span>
+    <div className="flex flex-col items-center gap-5">
+      <p className="text-lg font-bold text-amber-400 min-h-[28px]">{labels[phase]}</p>
+
+      {/* Table surface */}
+      <div className="relative flex items-end justify-center gap-0" style={{ height: 120 }}>
+        {/* Left arm */}
+        <div
+          className="origin-bottom transition-transform"
+          style={{
+            transformOrigin: "bottom center",
+            transform: `rotate(${leftArmRotation}deg)`,
+            transitionDuration: phase === 3 ? "400ms" : "350ms",
+            transitionTimingFunction: "ease-in-out",
+          }}
+        >
+          <div className={`flex flex-col items-center gap-0 ${shaking && phase === 2 ? "animate-bounce" : ""}`} style={{ animationDuration: "150ms" }}>
+            <span className="text-4xl" style={{ display: "block", transform: "scaleX(-1)" }}>💪</span>
+            <span className="text-3xl" style={{ display: "block", transform: "scaleX(-1)" }}>✊</span>
+          </div>
+        </div>
+
+        {/* Clasped hands in centre */}
+        <div className="relative z-10 mx-1 flex flex-col items-center" style={{ marginBottom: 4 }}>
+          <span className={`text-2xl ${phase === 2 ? "animate-pulse" : ""} ${phase === 3 ? "opacity-0" : ""}`}>🤝</span>
+        </div>
+
+        {/* Right arm */}
+        <div
+          className="origin-bottom transition-transform"
+          style={{
+            transformOrigin: "bottom center",
+            transform: `rotate(${rightArmRotation}deg)`,
+            transitionDuration: phase === 3 ? "400ms" : "350ms",
+            transitionTimingFunction: "ease-in-out",
+          }}
+        >
+          <div className={`flex flex-col items-center gap-0 ${shaking && phase === 2 ? "animate-bounce" : ""}`} style={{ animationDuration: "200ms" }}>
+            <span className="text-4xl">💪</span>
+            <span className="text-3xl">✊</span>
+          </div>
+        </div>
       </div>
-      <p className="text-lg font-bold text-amber-400">{labels[phase]}</p>
+
+      {/* Table */}
+      <div className="h-3 w-56 rounded-full bg-amber-900/60 border border-amber-700/40 shadow-lg" />
+
+      {phase === 3 && (
+        <p className="animate-pulse text-sm font-bold text-emerald-400">⚡ BEAST MODE ⚡</p>
+      )}
     </div>
   );
 }
@@ -255,7 +310,7 @@ function Roulette({ onComplete }: { onComplete: () => void }) {
     let current = 0;
     let speed = 30;
     const interval = setInterval(() => {
-      speed *= 0.97;
+      speed *= 0.985;
       current += speed;
       setAngle(current);
       if (speed < 0.5) {
@@ -263,7 +318,7 @@ function Roulette({ onComplete }: { onComplete: () => void }) {
         setDone(true);
       }
     }, 30);
-    const t = setTimeout(onComplete, 3500);
+    const t = setTimeout(onComplete, 5500);
     return () => {
       clearInterval(interval);
       clearTimeout(t);
@@ -294,19 +349,19 @@ function Snus({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 900);
-    const t2 = setTimeout(() => setPhase(2), 1700);
-    const t3 = setTimeout(() => setPhase(3), 2500);
-    const t4 = setTimeout(onComplete, 3300);
+    const t1 = setTimeout(() => setPhase(1), 1400);
+    const t2 = setTimeout(() => setPhase(2), 2800);
+    const t3 = setTimeout(() => setPhase(3), 4200);
+    const t4 = setTimeout(onComplete, 5800);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, [onComplete]);
 
   const frames = ["📦", "🤌", "😤", "🤙"];
   const labels = [
-    "Doosje open...",
-    "Legt ze onder de lip...",
-    "BAAAAM die nicotine rush! 🚀",
-    "Primed & ready. New challenge!",
+    "Doosje open doen..",
+    "Snuske onder de lip leggen...",
+    "BAAAAM nicotine kick!",
+    "Kleir voor de nieuwe challenge",
   ];
 
   return (
@@ -326,19 +381,19 @@ function Wine({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 900);
-    const t2 = setTimeout(() => setPhase(2), 1800);
-    const t3 = setTimeout(() => setPhase(3), 2600);
-    const t4 = setTimeout(onComplete, 3400);
+    const t1 = setTimeout(() => setPhase(1), 1500);
+    const t2 = setTimeout(() => setPhase(2), 3000);
+    const t3 = setTimeout(() => setPhase(3), 4500);
+    const t4 = setTimeout(onComplete, 6000);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, [onComplete]);
 
   const frames = ["🍷", "🤏", "🫨", "🧐"];
   const labels = [
-    "Schenkt in... met klasse",
-    "*snuift* ...hmm ja, noten...",
-    "*swirl swirl swirl*",
-    "Exquis! New challenge, meneer!",
+    "Wijntje inschenken...",
+    "*snuift* hmmm lekkerrr",
+    "*beetje schudden*",
+    "Bah ik proef kurk",
   ];
 
   return (
@@ -358,21 +413,21 @@ function Cocktail({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 800);
-    const t2 = setTimeout(() => setPhase(2), 1600);
-    const t3 = setTimeout(() => setPhase(3), 2400);
-    const t4 = setTimeout(() => setPhase(4), 3000);
-    const t5 = setTimeout(onComplete, 3700);
+    const t1 = setTimeout(() => setPhase(1), 1200);
+    const t2 = setTimeout(() => setPhase(2), 2500);
+    const t3 = setTimeout(() => setPhase(3), 3800);
+    const t4 = setTimeout(() => setPhase(4), 5000);
+    const t5 = setTimeout(onComplete, 6500);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, [onComplete]);
 
   const frames = ["🧊", "🥃", "🍹", "🧉", "🍸"];
   const labels = [
     "Ijs in het glas...",
-    "Shot erbij...",
+    "Shotje dabei...",
     "Shaken baby! 🫨",
     "Parapluutje erin...",
-    "Voilà! New challenge! 🍸",
+    "Hupse! Kleir 🍸",
   ];
 
   return (

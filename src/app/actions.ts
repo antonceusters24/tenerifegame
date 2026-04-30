@@ -241,6 +241,17 @@ export async function requestNewChallenge(day: number) {
 
   const supabase = await createClient();
 
+  // Enforce daily limit: max 2 challenges per person per day
+  const { count: todayCount } = await supabase
+    .from("assignments")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("day", day);
+
+  if ((todayCount ?? 0) >= 2) {
+    return { error: "Daily limit reached" };
+  }
+
   // Get ALL assigned challenge IDs across ALL players (global uniqueness)
   const { data: allAssigned } = await supabase
     .from("assignments")

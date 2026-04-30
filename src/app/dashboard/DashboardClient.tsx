@@ -397,6 +397,9 @@ export default function DashboardClient({
   const [viewingProfile, setViewingProfile] = useState<{ name: string; url: string } | null>(null);
   const [challengeCollapsed, setChallengeCollapsed] = useState(false);
   const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(true);
+  const [confirmAction, setConfirmAction] = useState<{ type: "complete" | "skip"; id: string; title: string } | null>(null);
+  const [historyTab, setHistoryTab] = useState<"challenges" | "approvals">("challenges");
+  const [nextDayCountdown, setNextDayCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
 
   const gameStatus = getGameStatus();
   const currentDay = getCurrentDay();
@@ -417,10 +420,28 @@ export default function DashboardClient({
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    function updateMidnight() {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diff = Math.max(0, midnight.getTime() - now.getTime());
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setNextDayCountdown({ hours, minutes, seconds });
+    }
+    updateMidnight();
+    const interval = setInterval(updateMidnight, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const active = assignments.filter((a) => a.status === "active");
   const pendingOwn = assignments.filter((a) => a.status === "pending");
   const completed = assignments.filter((a) => a.status === "completed");
   const skipped = assignments.filter((a) => a.status === "skipped");
+  const todayCount = currentDay ? assignments.filter((a) => a.day === currentDay).length : 0;
+  const dailyLimitReached = todayCount >= 2;
 
   async function handleComplete(id: string) {
     setLoading(id);
@@ -437,7 +458,6 @@ export default function DashboardClient({
   }
 
   async function handleSkip(id: string) {
-    if (!confirm("Skippen? Da kost u 10 punten, lafaard!")) return;
     setLoading(id);
     const res = await skipChallenge(id);
     if (!("error" in res)) {
@@ -580,16 +600,17 @@ export default function DashboardClient({
                   🏆
                 </Link>
               )}
-              {(completed.length > 0 || skipped.length > 0) && (
+              {(completed.length > 0 || skipped.length > 0 || (user.name === "Anton" && gameStatus === "active")) && (
                 <button
-                  onClick={() => setShowHistory((h) => !h)}
-                  className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${
-                    showHistory
-                      ? "bg-amber-500 text-black"
-                      : "bg-slate-700/50 text-amber-400 hover:bg-slate-700"
-                  }`}
+                  onClick={() => setShowHistory(true)}
+                  className="relative rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
                 >
                   📜 {completed.length + skipped.length}
+                  {user.name === "Anton" && pending.length > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-black">
+                      {pending.length}
+                    </span>
+                  )}
                 </button>
               )}
               <form action={logout}>
@@ -719,218 +740,333 @@ export default function DashboardClient({
         {/* During game - challenges available */}
         {gameStatus === "active" && currentDay && challengesAvailable() && (
           <>
-
-            {/* Peer Confirmations - only Anton sees this */}
-            {user.name === "Anton" && pending.length > 0 && (
-              <div className="mb-4">
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-400/70">👑 Jouw goedkeuring gevraagd</p>
-                <div className="space-y-2.5">
-                  {pending.map((p) => (
-                    <div
-                      key={p.id}
-                      className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-amber-500/10 to-slate-800/80 p-4 shadow-lg"
-                    >
-                      <div className="mb-3 flex items-start gap-3">
-                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-lg">
-                          👤
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-amber-300">{p.users?.name} zegt: gedaan!</p>
-                          <p className="mt-0.5 font-bold text-white leading-snug">{p.challenges?.title}</p>
-                          {p.challenges?.description && (
-                            <p className="mt-0.5 text-xs text-gray-400 leading-snug">{p.challenges.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleConfirm(p.id)}
-                          disabled={loading === p.id}
-                          className="flex-1 rounded-xl bg-emerald-500 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
-                        >
-                          ✅ Alleej dan
-                        </button>
-                        <button
-                          onClick={() => handleReject(p.id)}
-                          disabled={loading === p.id}
-                          className="flex-1 rounded-xl border border-red-500/30 bg-red-900/30 py-2.5 text-sm font-extrabold text-red-400 transition hover:bg-red-900/50 active:scale-95 disabled:opacity-50"
-                        >
-                          ❌ Niejet jom
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Active Challenges - rendered in bottom bar outside this container */}
           </>
         )}
 
-        {/* History panel (toggled) */}
-        {showHistory && (completed.length > 0 || skipped.length > 0) && (
-          <div className="mb-6 rounded-xl border border-slate-700 bg-slate-800/80 p-4 backdrop-blur">
-            {completed.length > 0 && (
-              <div className="mb-4">
-                <h2 className="mb-2 text-sm font-bold text-emerald-400">
-                  ✅ Gedaan ({completed.length})
-                </h2>
-                <div className="space-y-1.5">
-                  {completed.map((a) => (
-                    <div
-                      key={a.id}
-                      className="rounded-lg bg-emerald-500/10 px-3 py-2"
-                    >
-                      <span className="text-xs text-emerald-300">
-                        Dag {a.day} · +{a.challenges?.points}pts
-                      </span>
-                      <p className="text-sm font-medium text-white">
-                        {a.challenges?.title}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+        {/* History modal */}
+        {showHistory && (
+          <div className="fixed inset-0 z-[200] flex flex-col bg-slate-950/95 backdrop-blur-sm" onClick={() => setShowHistory(false)}>
+            <div className="flex flex-col h-full" onClick={(e) => e.stopPropagation()}>
+              {/* Modal header */}
+              <div className="flex items-center justify-between border-b border-slate-700/60 px-4 py-4">
+                <p className="text-base font-extrabold text-white">📜 Mijn rapportje</p>
+                <button onClick={() => setShowHistory(false)} className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm text-gray-400 hover:text-white">✕ Sluiten</button>
               </div>
-            )}
-            {skipped.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-sm font-bold text-red-400">
-                  ❌ Geskipt ({skipped.length})
-                </h2>
-                <div className="space-y-1.5">
-                  {skipped.map((a) => (
-                    <div
-                      key={a.id}
-                      className="rounded-lg bg-red-500/10 px-3 py-2"
-                    >
-                      <span className="text-xs text-red-300">
-                        Dag {a.day} · -10pts
+
+              {/* Tabs (Anton only) */}
+              {user.name === "Anton" && gameStatus === "active" && (
+                <div className="flex gap-1 border-b border-slate-700/60 px-4 py-2">
+                  <button
+                    onClick={() => setHistoryTab("challenges")}
+                    className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
+                      historyTab === "challenges" ? "bg-slate-700 text-white" : "text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    📜 Challenges
+                  </button>
+                  <button
+                    onClick={() => setHistoryTab("approvals")}
+                    className={`relative rounded-lg px-4 py-2 text-sm font-bold transition ${
+                      historyTab === "approvals" ? "bg-amber-500/20 text-amber-400" : "text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    👑 Goedkeuring
+                    {pending.length > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-black">
+                        {pending.length}
                       </span>
-                      <p className="text-sm font-medium text-white/50 line-through">
-                        {a.challenges?.title}
-                      </p>
-                    </div>
-                  ))}
+                    )}
+                  </button>
                 </div>
+              )}
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {/* Challenges tab (or default for non-Anton) */}
+                {(user.name !== "Anton" || historyTab === "challenges") && (
+                  <>
+                    {completed.length === 0 && skipped.length === 0 && (
+                      <p className="py-8 text-center text-sm text-gray-500">Nog geen challenges gedaan of geskipt.</p>
+                    )}
+                    {completed.length > 0 && (
+                      <div className="mb-4">
+                        <h2 className="mb-2 text-sm font-bold text-emerald-400">✅ Been there, done that (slay queen) ({completed.length})</h2>
+                        <div className="space-y-1.5">
+                          {completed.map((a) => (
+                            <div key={a.id} className="rounded-lg bg-emerald-500/10 px-3 py-2">
+                              <span className="text-xs text-emerald-300">Dag {a.day} · +{a.challenges?.points}pts</span>
+                              <p className="text-sm font-medium text-white">{a.challenges?.title}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {skipped.length > 0 && (
+                      <div>
+                        <h2 className="mb-2 text-sm font-bold text-red-400">❌ Ik was beetje pussy voor deze ({skipped.length})</h2>
+                        <div className="space-y-1.5">
+                          {skipped.map((a) => (
+                            <div key={a.id} className="rounded-lg bg-red-500/10 px-3 py-2">
+                              <span className="text-xs text-red-300">Dag {a.day} · -10pts</span>
+                              <p className="text-sm font-medium text-white/50 line-through">{a.challenges?.title}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Approvals tab (Anton only) */}
+                {user.name === "Anton" && historyTab === "approvals" && (
+                  <div className="space-y-3">
+                    {pending.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-gray-500">Niemand wacht op goedkeuring — top!</p>
+                    ) : pending.map((p) => (
+                      <div key={p.id} className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-amber-500/10 to-slate-800/80 p-4 shadow-lg">
+                        <div className="mb-3 flex items-start gap-3">
+                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-lg">👤</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-amber-300">{p.users?.name} zegt: gedaan!</p>
+                            <p className="mt-0.5 font-bold text-white leading-snug">{p.challenges?.title}</p>
+                            {p.challenges?.description && (
+                              <p className="mt-0.5 text-xs text-gray-400 leading-snug">{p.challenges.description}</p>
+                            )}
+                          </div>
+                          <span className="shrink-0 text-xs font-bold text-amber-400">+{p.challenges?.points}pts</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleConfirm(p.id)}
+                            disabled={loading === p.id}
+                            className="flex-1 rounded-xl bg-emerald-500 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
+                          >
+                            Alleej dan
+                          </button>
+                          <button
+                            onClick={() => handleReject(p.id)}
+                            disabled={loading === p.id}
+                            className="flex-1 rounded-xl border border-red-500/30 bg-red-900/30 py-2.5 text-sm font-extrabold text-red-400 transition hover:bg-red-900/50 active:scale-95 disabled:opacity-50"
+                          >
+                            Niejet jom
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>
+
+      {/* Confirmation modal */}
+      {confirmAction && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-6" onClick={() => setConfirmAction(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {confirmAction.type === "complete" ? (
+              <>
+                <p className="mb-1 text-center text-3xl">✅</p>
+                <p className="mt-2 text-center text-lg font-extrabold text-white">Challenge kleir?</p>
+                <p className="mt-1 text-center text-sm text-gray-400">&ldquo;{confirmAction.title}&rdquo;</p>
+                <p className="mt-1 text-center text-xs text-emerald-400">Anton gaat da toch nog ff moeten bevestigen, dan krijgde uw puntjes x</p>
+                <div className="mt-5 flex gap-2">
+                  <button onClick={() => setConfirmAction(null)} className="flex-1 rounded-xl bg-slate-700 py-3 text-sm font-medium text-gray-300 transition hover:bg-slate-600 active:scale-95">Annuleer</button>
+                  <button
+                    onClick={() => { handleComplete(confirmAction.id); setConfirmAction(null); }}
+                    disabled={loading === confirmAction.id}
+                    className="flex-1 rounded-xl bg-emerald-500 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
+                  >
+                    Sjeker da!
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mb-1 text-center text-3xl">💀</p>
+                <p className="mt-2 text-center text-lg font-extrabold text-white">Zeker skippen?</p>
+                <p className="mt-1 text-center text-sm text-gray-400">&ldquo;{confirmAction.title}&rdquo;</p>
+                <p className="mt-1 text-center text-xs text-red-400">Da kost u 10 punten, lafaard!</p>
+                <div className="mt-5 flex gap-2">
+                  <button onClick={() => setConfirmAction(null)} className="flex-1 rounded-xl bg-slate-700 py-3 text-sm font-medium text-gray-300 transition hover:bg-slate-600 active:scale-95">Terug</button>
+                  <button
+                    onClick={() => { handleSkip(confirmAction.id); setConfirmAction(null); }}
+                    disabled={loading === confirmAction.id}
+                    className="flex-1 rounded-xl border border-red-500/30 bg-red-900/50 py-3 text-sm font-extrabold text-red-300 transition hover:bg-red-900/70 active:scale-95 disabled:opacity-50"
+                  >
+                    Skip (-10pts)
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Bottom bar - active challenges */}
       {gameStatus === "active" && currentDay && challengesAvailable() && (
         <>
           {active.length === 0 && pendingOwn.length === 0 ? (
             <div
-              className="border-t border-slate-700 bg-slate-900 p-4 text-center"
-              style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+              className="bg-slate-950/98 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md"
+              style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, borderTop: "1px solid rgba(245,158,11,0.15)", borderRadius: "20px 20px 0 0" }}
             >
-              <button
-                onClick={handleRequestNew}
-                disabled={loading === "new"}
-                className="w-full max-w-lg rounded-xl bg-amber-500 py-3.5 text-lg font-bold text-black transition hover:bg-amber-400 active:scale-95 disabled:opacity-50"
-              >
-                {loading === "new" ? "Laden..." : "🎲 Fiks nieuwe challenge"}
-              </button>
+              <div className="mx-auto max-w-lg">
+                <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-amber-400/70">⚡ Mijn huidige challenge</p>
+                {dailyLimitReached ? (
+                  <div className="w-full rounded-2xl border border-slate-700 bg-slate-800/80 py-4 text-center">
+                    <p className="text-sm font-bold text-gray-300">🚫 HAHAHAHA daglimiet bereikt loser (2/2)</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Ff wachten makkerke, nieuwe challenge over{" "}
+                      <span className="font-bold text-amber-400">
+                        {String(nextDayCountdown.hours).padStart(2, "0")}:{String(nextDayCountdown.minutes).padStart(2, "0")}:{String(nextDayCountdown.seconds).padStart(2, "0")}
+                      </span>
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleRequestNew}
+                    disabled={loading === "new"}
+                    className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 text-base font-extrabold text-black shadow-lg shadow-amber-500/30 transition hover:from-amber-400 hover:to-orange-400 active:scale-95 disabled:opacity-50"
+                  >
+                    {loading === "new" ? "Laden..." : "🎲 Fiks nieuwe challenge"}
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
-            <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50 }}>
-              {/* Collapse handle */}
+            <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, borderRadius: "20px 20px 0 0", overflow: "hidden" }}>
+              {/* Peek strip */}
               <button
-                className="w-full border-t border-slate-700/80 bg-slate-900/95 px-4 py-2 backdrop-blur-sm"
+                className="w-full border-t border-amber-500/20 bg-slate-950/98 px-4 pt-2.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] backdrop-blur-md"
                 onClick={() => setChallengeCollapsed((c) => !c)}
               >
-                <div className="mx-auto flex max-w-lg items-center justify-between">
-                  {active.length > 0 ? (
+                <div className="mx-auto max-w-lg">
+                  {challengeCollapsed ? (
+                    // Collapsed: show full preview
                     <>
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="shrink-0 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
-                          {active[0].challenges?.categories?.name || "Challenge"}
-                        </span>
-                        <span className="truncate text-sm font-bold text-white">
-                          {active[0].challenges?.title}
-                        </span>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400/80">⚡ Mijn huidige challenge</span>
+                        <span className="text-[10px] text-gray-600">▼</span>
                       </div>
-                      <div className="ml-2 flex shrink-0 items-center gap-2">
-                        <span className="text-xs font-bold text-amber-400">+{active[0].challenges?.points}pts</span>
-                        <span className="text-[10px] text-gray-500">{challengeCollapsed ? "▲" : "▼"}</span>
-                      </div>
+                      {active.length > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <span className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                            difficultyColor[active[0].challenges?.difficulty as keyof typeof difficultyColor] ?? "bg-slate-700 text-gray-300"
+                          }`}>
+                            {active[0].challenges?.categories?.name || "Challenge"}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">
+                            {active[0].challenges?.categories?.name?.toLowerCase() === "gotcha"
+                              ? `Het woord: ${active[0].challenges?.title}`
+                              : active[0].challenges?.title}
+                          </span>
+                          {active[0].target_player_name && (
+                            <span className="shrink-0 text-xs font-semibold text-orange-400">🎯 {active[0].target_player_name}</span>
+                          )}
+                          <span className="shrink-0 text-xs font-extrabold text-amber-400">+{active[0].challenges?.points}pts</span>
+                        </div>
+                      ) : (
+                        <p className="text-xs font-semibold text-amber-400">⏳ Wachten op bevestiging van Anton</p>
+                      )}
                     </>
                   ) : (
-                    <>
-                      <span className="text-xs font-medium text-amber-400">⏳ Wachten op bevestiging van Anton</span>
-                      <span className="text-[10px] text-gray-500">{challengeCollapsed ? "▲" : "▼"}</span>
-                    </>
+                    // Expanded: minimal — just label + category + chevron
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400/80">⚡ Mijn huidige challenge</span>
+                        {active.length > 0 && (
+                          <span className={`rounded-lg px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                            difficultyColor[active[0].challenges?.difficulty as keyof typeof difficultyColor] ?? "bg-slate-700 text-gray-300"
+                          }`}>
+                            {active[0].challenges?.categories?.name || "Challenge"}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-600">▲</span>
+                    </div>
                   )}
                 </div>
               </button>
 
-              {/* Expanded content */}
+              {/* Expanded panel */}
               {!challengeCollapsed && (
-                <div
-                  className="bg-slate-900/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm"
-                >
+                <div className="bg-slate-950/98 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
                   <div className="mx-auto max-w-lg space-y-3">
                     {active.map((a) => (
                       <div
                         key={a.id}
-                        className="rounded-2xl border border-slate-600/60 bg-gradient-to-b from-slate-800 to-slate-800/80 p-4 shadow-xl"
+                        className="overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-slate-800/90 via-slate-800/70 to-slate-900/90 shadow-xl"
                       >
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                            difficultyColor[a.challenges?.difficulty as keyof typeof difficultyColor] ?? "bg-slate-700 text-gray-300"
-                          }`}>
-                            {a.challenges?.categories?.name || "Challenge"}
-                          </span>
-                          <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-bold text-amber-400">
-                            +{a.challenges?.points}pts
-                          </span>
-                        </div>
-                        <h3 className="text-xl font-extrabold leading-tight text-white">
-                          {a.challenges?.title}
-                        </h3>
-                        {a.target_player_name && (
-                          <p className="mt-1 text-sm font-semibold text-orange-400">
-                            🎯 Target: {a.target_player_name}
-                          </p>
-                        )}
-                        {a.challenges?.description && (
-                          <p className="mt-1.5 text-sm leading-relaxed text-gray-400">
-                            {a.challenges.description}
-                          </p>
-                        )}
-                        <div className="mt-4 flex gap-2">
-                          <button
-                            onClick={() => handleComplete(a.id)}
-                            disabled={loading === a.id}
-                            className="flex-1 rounded-xl bg-emerald-500 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
-                          >
-                            {loading === a.id ? "..." : "✅ Gedaan!"}
-                          </button>
-                          <button
-                            onClick={() => handleSkip(a.id)}
-                            disabled={loading === a.id}
-                            className="rounded-xl border border-red-500/20 bg-red-900/40 px-4 py-3 text-sm font-bold text-red-400 transition hover:bg-red-900/60 disabled:opacity-50"
-                          >
-                            Skip (-10)
-                          </button>
+                        {/* Coloured top accent bar */}
+                        <div className={`h-1 w-full ${
+                          a.challenges?.difficulty === "hard" ? "bg-gradient-to-r from-red-500 to-rose-600" :
+                          a.challenges?.difficulty === "medium" ? "bg-gradient-to-r from-amber-500 to-orange-500" :
+                          "bg-gradient-to-r from-emerald-500 to-teal-500"
+                        }`} />
+                        <div className="p-4">
+                          <div className="mb-3 flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              {a.challenges?.categories?.name?.toLowerCase() === "gotcha" ? (
+                                <>
+                                  <p className="mb-0.5 text-xs font-bold uppercase tracking-widest text-amber-400/60">Het woord:</p>
+                                  <h3 className="text-3xl font-black leading-tight tracking-tight text-white">
+                                    {a.challenges?.title}
+                                  </h3>
+                                </>
+                              ) : (
+                                <h3 className="text-2xl font-black leading-tight tracking-tight text-white">
+                                  {a.challenges?.title}
+                                </h3>
+                              )}
+                            </div>
+                            <span className="shrink-0 rounded-lg bg-amber-500/15 px-2.5 py-1 text-sm font-extrabold text-amber-400 ring-1 ring-amber-500/30">
+                              +{a.challenges?.points} pts
+                            </span>
+                          </div>
+                          {a.target_player_name && (
+                            <div className="mb-2 flex items-center gap-1.5">
+                              <span className="text-sm">🎯</span>
+                              <span className="text-sm font-bold text-orange-400">Target: {a.target_player_name}</span>
+                            </div>
+                          )}
+                          {a.challenges?.description && (
+                            <p className="mt-2 text-sm leading-relaxed text-gray-400">
+                              {a.challenges.description}
+                            </p>
+                          )}
+                          <div className="mt-4 flex gap-2.5">
+                            <button
+                              onClick={() => setConfirmAction({ type: "complete", id: a.id, title: a.challenges?.title || "" })}
+                              disabled={loading === a.id}
+                              className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-teal-400 active:scale-95 disabled:opacity-50"
+                            >
+                              {loading === a.id ? "..." : "Kleir!"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmAction({ type: "skip", id: a.id, title: a.challenges?.title || "" })}
+                              disabled={loading === a.id}
+                              className="rounded-2xl border border-red-500/25 bg-red-950/60 px-5 py-3.5 text-sm font-extrabold text-red-400 transition hover:bg-red-900/60 active:scale-95 disabled:opacity-50"
+                            >
+                              Neuj
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
 
                     {pendingOwn.map((a) => (
-                      <div
-                        key={a.id}
-                        className="rounded-2xl border border-amber-500/20 bg-slate-800/60 p-4"
-                      >
-                        <div className="mb-1 flex items-center gap-2">
-                          <span className="animate-pulse text-sm">⏳</span>
-                          <span className="text-xs font-semibold text-amber-400">Wachten op bevestiging van Anton</span>
+                      <div key={a.id} className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">⏳</span>
+                          <div>
+                            <p className="text-xs font-bold text-amber-400">Wachten op bevestiging van Anton</p>
+                            <p className="text-sm font-bold text-white">{a.challenges?.title}</p>
+                          </div>
+                          <span className="ml-auto shrink-0 text-xs font-extrabold text-amber-400">+{a.challenges?.points}pts</span>
                         </div>
-                        <h3 className="font-bold text-white">{a.challenges?.title}</h3>
-                        <p className="mt-0.5 text-xs text-gray-500">+{a.challenges?.points}pts na bevestiging</p>
                       </div>
                     ))}
                   </div>
