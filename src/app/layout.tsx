@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tenerife 2026 - De Mannen Challenge",
-  description: "Challenge spel voor de mannen op vakantie",
+  title: "Tenerife 2026",
+  description: "De mannen op pad in Tenerife",
 };
 
 export default function RootLayout({
