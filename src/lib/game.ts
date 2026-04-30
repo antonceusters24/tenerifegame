@@ -1,5 +1,5 @@
 export const GAME_DATES = [
-  "2026-04-30", // TESTING: was 2026-05-12
+  "2026-05-12",
   "2026-05-13",
   "2026-05-14",
   "2026-05-15",
@@ -8,10 +8,10 @@ export const GAME_DATES = [
   "2026-05-18",
 ];
 
-export const TRIP_START = "2026-04-30"; // TESTING: was 2026-05-12
+export const TRIP_START = "2026-05-12";
 
-export const ACTIVATION_TIME = "2026-04-30T00:00:00Z"; // TESTING: was 2026-05-12T17:00:00Z
-const CHALLENGES_START = "2026-04-30T00:00:00Z"; // TESTING: was 2026-05-13T08:00:00Z
+export const ACTIVATION_TIME = "2026-05-12T17:00:00Z";
+const CHALLENGES_START = "2026-05-13T08:00:00Z";
 const GAME_END = "2026-05-18T23:00:00Z";
 
 export function getLocalDateString(): string {
