@@ -16,7 +16,19 @@ export async function GET() {
       return NextResponse.json({ src: null, type: "image" });
     }
 
-    const random = files[Math.floor(Math.random() * files.length)];
+    const videos = files.filter((f) => /\.(mp4|mov|webm)$/i.test(f));
+    const images = files.filter((f) => !/\.(mp4|mov|webm)$/i.test(f));
+
+    // Give videos ~40% chance when both types exist
+    let random: string;
+    if (videos.length > 0 && images.length > 0) {
+      random = Math.random() < 0.4
+        ? videos[Math.floor(Math.random() * videos.length)]
+        : images[Math.floor(Math.random() * images.length)];
+    } else {
+      random = files[Math.floor(Math.random() * files.length)];
+    }
+
     const isVideo = /\.(mp4|mov|webm)$/i.test(random);
     return NextResponse.json({
       src: `/memes/${encodeURIComponent(random)}`,
