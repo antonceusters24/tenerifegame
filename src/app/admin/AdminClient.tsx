@@ -210,37 +210,22 @@ export default function AdminClient({
                 placeholder="Describe what the player needs to do..."
               />
             </div>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="mb-1 block text-sm font-medium text-gray-300">
-                  Difficulty
-                </label>
-                <select
-                  name="difficulty"
-                  required
-                  defaultValue="medium"
-                  onChange={(e) => setPoints(DIFFICULTY_POINTS[e.target.value] ?? 10)}
-                  className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white"
-                >
-                  <option value="easy">Easy (5pts)</option>
-                  <option value="medium">Medium (10pts)</option>
-                  <option value="hard">Hard (20pts)</option>
-                </select>
-              </div>
-              <div className="flex-1">
-                <label className="mb-1 block text-sm font-medium text-gray-300">
-                  Points
-                </label>
-                <input
-                  name="points"
-                  type="number"
-                  value={points}
-                  onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
-                  min={1}
-                  required
-                  className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white"
-                />
-              </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">
+                Difficulty
+              </label>
+              <select
+                name="difficulty"
+                required
+                defaultValue="medium"
+                onChange={(e) => setPoints(DIFFICULTY_POINTS[e.target.value] ?? 10)}
+                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white"
+              >
+                <option value="easy">Easy (5pts)</option>
+                <option value="medium">Medium (10pts)</option>
+                <option value="hard">Hard (20pts)</option>
+              </select>
+              <input type="hidden" name="points" value={points} />
             </div>
             {/* Bonus fields */}
             <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-3">
@@ -263,7 +248,7 @@ export default function AdminClient({
                 <input
                   name="bonus_points"
                   type="number"
-                  defaultValue={0}
+                  defaultValue={5}
                   min={0}
                   className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white"
                 />
@@ -344,18 +329,22 @@ export default function AdminClient({
                   </select>
                   <input name="title" defaultValue={c.title} required className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" />
                   <textarea name="description" defaultValue={c.description} rows={3} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" />
-                  <div className="flex gap-3">
-                    <select name="difficulty" defaultValue={c.difficulty} required className="flex-1 rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white">
+                  <div>
+                    <select name="difficulty" defaultValue={c.difficulty} required className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" onChange={(e) => {
+                      const pts = DIFFICULTY_POINTS[e.target.value] ?? 10;
+                      const hidden = e.target.parentElement?.querySelector('input[name="points"]') as HTMLInputElement | null;
+                      if (hidden) hidden.value = String(pts);
+                    }}>
                       <option value="easy">Easy (5pts)</option>
                       <option value="medium">Medium (10pts)</option>
                       <option value="hard">Hard (20pts)</option>
                     </select>
-                    <input name="points" type="number" defaultValue={c.points} min={1} required className="w-20 rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" />
+                    <input type="hidden" name="points" defaultValue={c.points} />
                   </div>
                   <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-2">
                     <p className="text-xs font-bold text-amber-400/80">🌟 Bonus</p>
                     <textarea name="bonus_description" defaultValue={c.bonus_description || ""} rows={2} placeholder="Bonus beschrijving..." className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white placeholder:text-gray-500" />
-                    <input name="bonus_points" type="number" defaultValue={c.bonus_points || 0} min={0} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white" />
+                    <input name="bonus_points" type="number" defaultValue={c.bonus_points || 5} min={0} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white" />
                   </div>
                   <input type="hidden" name="requires_target" value={c.requires_target ? "true" : ""} />
                   <div>
