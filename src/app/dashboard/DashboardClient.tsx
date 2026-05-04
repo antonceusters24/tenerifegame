@@ -797,7 +797,7 @@ export default function DashboardClient({
                         <div className="space-y-1.5">
                           {completed.map((a) => (
                             <div key={a.id} className="rounded-lg bg-emerald-500/10 px-3 py-2">
-                              <span className="text-xs text-emerald-300">Dag {a.day} · +{a.challenges?.points}pts</span>
+                              <span className="text-xs text-emerald-300">Dag {a.day} · +{a.challenges?.points}pts{a.bonus_completed && a.challenges?.bonus_points ? ` +${a.challenges.bonus_points} bonus` : ""}</span>
                               <p className="text-sm font-medium text-white">{a.challenges?.title}</p>
                             </div>
                           ))}

@@ -10,9 +10,11 @@ type AssignmentDetail = {
   user_id: string;
   day: number;
   status: string;
+  bonus_completed: boolean;
   challenges: {
     title: string;
     points: number;
+    bonus_points: number;
     difficulty: string;
     categories: { name: string } | null;
   } | null;
@@ -127,6 +129,7 @@ export default function ScoreboardClient({
                 : [];
               const completedOnes = playerAssignments.filter((a) => a.status === "completed");
               const skippedOnes = playerAssignments.filter((a) => a.status === "skipped");
+              const expiredOnes = playerAssignments.filter((a) => a.status === "expired");
 
               const RANK_META = [
                 { medal: "🥇", title: "Legend",        titleColor: "text-amber-400",  card: "border-amber-500/50 bg-gradient-to-r from-amber-500/15 via-slate-800/60 to-transparent", glow: "shadow-amber-500/15" },
@@ -201,7 +204,7 @@ export default function ScoreboardClient({
                             {completedOnes.map((a) => (
                               <div key={a.id} className="flex items-center justify-between rounded-lg bg-emerald-500/8 px-3 py-1.5 text-sm">
                                 <span className="truncate text-gray-300">{a.challenges?.title || "Unknown"} <span className="text-xs text-gray-600">Dag {a.day}</span></span>
-                                <span className="ml-2 shrink-0 text-xs font-bold text-emerald-400">+{a.challenges?.points}</span>
+                                <span className="ml-2 shrink-0 text-xs font-bold text-emerald-400">+{a.challenges?.points}{a.bonus_completed && a.challenges?.bonus_points ? ` +${a.challenges.bonus_points}🌟` : ""}</span>
                               </div>
                             ))}
                           </div>
@@ -215,6 +218,19 @@ export default function ScoreboardClient({
                               <div key={a.id} className="flex items-center justify-between rounded-lg bg-red-500/8 px-3 py-1.5 text-sm">
                                 <span className="truncate text-gray-500 line-through">{a.challenges?.title || "Unknown"}</span>
                                 <span className="ml-2 shrink-0 text-xs font-bold text-red-400">-10</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {expiredOnes.length > 0 && (
+                        <div>
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-500">Te laaaaat ⌛</p>
+                          <div className="space-y-1">
+                            {expiredOnes.map((a) => (
+                              <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-700/30 px-3 py-1.5 text-sm">
+                                <span className="truncate text-gray-500">{a.challenges?.title || "Unknown"}</span>
+                                <span className="ml-2 shrink-0 text-xs text-gray-600">0</span>
                               </div>
                             ))}
                           </div>

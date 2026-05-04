@@ -15,7 +15,7 @@ export default async function ScoreboardPage() {
   // Get all assignments with challenge details for all players
   const { data: allAssignments } = await supabase
     .from(getTable("assignments"))
-    .select(`*, ${getTable("challenges")}(title, points, difficulty, categories(name)), users(name)`)
+    .select(`*, ${getTable("challenges")}(title, points, bonus_points, difficulty, categories(name)), users(name)`)
     .order("day", { ascending: true });
 
   // Chinese Fucking scores
