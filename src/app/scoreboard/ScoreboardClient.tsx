@@ -168,7 +168,7 @@ export default function ScoreboardClient({
                           {entry.name === user.name && <span className="text-xs font-normal text-gray-500">(gij)</span>}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {entry.completed_count} gedaan · {entry.skipped_count} geskipt
+                          {entry.completed_count} gedaan · {entry.skipped_count} geskipt{entry.expired_count > 0 && ` · ${entry.expired_count} te laaaaat`}
                         </p>
                       </div>
 

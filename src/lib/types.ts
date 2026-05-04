@@ -59,5 +59,6 @@ export type ScoreboardEntry = {
   total_points: number;
   completed_count: number;
   skipped_count: number;
+  expired_count: number;
   pending_count: number;
 };
