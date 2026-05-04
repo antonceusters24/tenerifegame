@@ -38,7 +38,9 @@ export default function AdminClient({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [gotchaDesc, setGotchaDesc] = useState(false);
   const [points, setPoints] = useState(10);
+  const [bonusActive, setBonusActive] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBonusActive, setEditBonusActive] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
@@ -59,6 +61,7 @@ export default function AdminClient({
       setSelectedCategory("");
       setGotchaDesc(false);
       setPoints(10);
+      setBonusActive(false);
       window.location.reload();
     }
     setLoading(false);
@@ -227,33 +230,46 @@ export default function AdminClient({
               </select>
               <input type="hidden" name="points" value={points} />
             </div>
-            {/* Bonus fields */}
-            <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-amber-400/80">🌟 Bonus (optioneel)</p>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-400">
-                  Bonus beschrijving
-                </label>
-                <textarea
-                  name="bonus_description"
-                  rows={2}
-                  className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white placeholder:text-gray-500"
-                  placeholder="Wat moet de speler extra doen voor bonuspunten?"
-                />
+            {/* Bonus toggle */}
+            <button
+              type="button"
+              onClick={() => setBonusActive(!bonusActive)}
+              className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${
+                bonusActive
+                  ? "border-amber-500 bg-amber-500/20 text-amber-300"
+                  : "border-slate-600 bg-slate-700/50 text-gray-400"
+              }`}
+            >
+              <span className="text-lg">{bonusActive ? "✅" : "⬜"}</span>
+              <span>🌟 Bonus toevoegen</span>
+            </button>
+            {bonusActive && (
+              <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">
+                    Bonus beschrijving
+                  </label>
+                  <textarea
+                    name="bonus_description"
+                    rows={2}
+                    className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white placeholder:text-gray-500"
+                    placeholder="Wat moet de speler extra doen voor bonuspunten?"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-400">
+                    Bonus punten
+                  </label>
+                  <input
+                    name="bonus_points"
+                    type="number"
+                    defaultValue={5}
+                    min={0}
+                    className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-400">
-                  Bonus punten
-                </label>
-                <input
-                  name="bonus_points"
-                  type="number"
-                  defaultValue={5}
-                  min={0}
-                  className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white"
-                />
-              </div>
-            </div>
+            )}
             <input type="hidden" name="requires_target" value={requiresTarget ? "true" : ""} />
             <button
               type="button"
@@ -341,11 +357,24 @@ export default function AdminClient({
                     </select>
                     <input type="hidden" name="points" defaultValue={c.points} />
                   </div>
-                  <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-2">
-                    <p className="text-xs font-bold text-amber-400/80">🌟 Bonus</p>
-                    <textarea name="bonus_description" defaultValue={c.bonus_description || ""} rows={2} placeholder="Bonus beschrijving..." className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white placeholder:text-gray-500" />
-                    <input name="bonus_points" type="number" defaultValue={c.bonus_points || 5} min={0} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditBonusActive(!editBonusActive)}
+                    className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-xs transition ${
+                      editBonusActive
+                        ? "border-amber-500 bg-amber-500/20 text-amber-300"
+                        : "border-slate-600 bg-slate-700/50 text-gray-400"
+                    }`}
+                  >
+                    <span className="text-lg">{editBonusActive ? "✅" : "⬜"}</span>
+                    <span>🌟 Bonus</span>
+                  </button>
+                  {editBonusActive && (
+                    <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-2">
+                      <textarea name="bonus_description" defaultValue={c.bonus_description || ""} rows={2} placeholder="Bonus beschrijving..." className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white placeholder:text-gray-500" />
+                      <input name="bonus_points" type="number" defaultValue={c.bonus_points || 5} min={0} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white" />
+                    </div>
+                  )}
                   <input type="hidden" name="requires_target" value={c.requires_target ? "true" : ""} />
                   <div>
                     <label className="mb-1 block text-xs font-medium text-gray-400">Door (admin)</label>
@@ -390,7 +419,7 @@ export default function AdminClient({
                     </div>
                     <div className="flex shrink-0 gap-1.5">
                       <button
-                        onClick={() => setEditingId(c.id)}
+                        onClick={() => { setEditingId(c.id); setEditBonusActive(!!(c.bonus_description || c.bonus_points > 0)); }}
                         className="rounded-lg bg-slate-600/40 px-2.5 py-1 text-sm text-gray-300 transition hover:bg-slate-600"
                       >
                         ✏️
