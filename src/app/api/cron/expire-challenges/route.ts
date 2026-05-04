@@ -36,11 +36,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: "No expired days yet", expiredDays: [] });
   }
 
-  // Find all active assignments for expired days and mark them as skipped
+  // Find all active assignments for expired days and mark them as expired (no penalty)
   // Do NOT expire "pending" assignments (they were submitted, awaiting approval)
   const { data: expired, error } = await supabase
     .from(getTable("assignments"))
-    .update({ status: "skipped", completed_at: new Date().toISOString() })
+    .update({ status: "expired", completed_at: new Date().toISOString() })
     .eq("status", "active")
     .in("day", expiredDays)
     .select("id");

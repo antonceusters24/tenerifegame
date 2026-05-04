@@ -26,8 +26,8 @@ import EasterEggs from "@/components/EasterEggs";
 const DAY_NAMES = [
   { name: "De aankomst", emoji: "🛬", subtitle: "Stilte voor de storm" },
   { name: "De oepwarming", emoji: "🔥", subtitle: "Alleman fris en fruitig, zuipeeee" },
-  { name: "Den doorzetter", emoji: "💪", subtitle: "Vandaag wordt het nog steviger eh mannen" },
-  { name: "Den halve", emoji: "⚡", subtitle: "Zen al wijt halverwege, tandje bijsteken nouw" },
+  { name: "Alles geven e", emoji: "💪", subtitle: "Vandaag wordt het nog steviger eh mannen" },
+  { name: "Oep den helft", emoji: "⚡", subtitle: "Zen al wijt halverwege, tandje bijsteken nouw" },
   { name: "Afzien", emoji: "🥵", subtitle: "Hier worden de grote mannen van de kleine jongens gescheiden" },
   { name: "De Climax", emoji: "🏔️", subtitle: "Gisteren was niks, vandaag gaat het los" },
   { name: "Het finaal gevecht", emoji: "👑", subtitle: "Laatste kans om u te bewijzen, legend" },
@@ -441,6 +441,7 @@ export default function DashboardClient({
   const pendingOwn = assignments.filter((a) => a.status === "pending");
   const completed = assignments.filter((a) => a.status === "completed");
   const skipped = assignments.filter((a) => a.status === "skipped");
+  const expired = assignments.filter((a) => a.status === "expired");
   const todayCount = currentDay ? assignments.filter((a) => a.day === currentDay).length : 0;
   const dailyLimitReached = todayCount >= 2;
 
@@ -601,12 +602,12 @@ export default function DashboardClient({
                   🏆
                 </Link>
               )}
-              {(completed.length > 0 || skipped.length > 0 || (user.name === "Anton" && gameStatus === "active")) && (
+              {(completed.length > 0 || skipped.length > 0 || expired.length > 0 || (user.name === "Anton" && gameStatus === "active")) && (
                 <button
                   onClick={() => setShowHistory(true)}
                   className="relative rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
                 >
-                  📜 {completed.length + skipped.length}
+                  📜 {completed.length + skipped.length + expired.length}
                   {user.name === "Anton" && pending.length > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-black">
                       {pending.length}
@@ -787,7 +788,7 @@ export default function DashboardClient({
                 {/* Challenges tab (or default for non-Anton) */}
                 {(user.name !== "Anton" || historyTab === "challenges") && (
                   <>
-                    {completed.length === 0 && skipped.length === 0 && (
+                    {completed.length === 0 && skipped.length === 0 && expired.length === 0 && (
                       <p className="py-8 text-center text-sm text-gray-500">Nog geen challenges gedaan of geskipt.</p>
                     )}
                     {completed.length > 0 && (
@@ -811,6 +812,19 @@ export default function DashboardClient({
                             <div key={a.id} className="rounded-lg bg-red-500/10 px-3 py-2">
                               <span className="text-xs text-red-300">Dag {a.day} · -10pts</span>
                               <p className="text-sm font-medium text-white/50 line-through">{a.challenges?.title}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {expired.length > 0 && (
+                      <div className="mt-4">
+                        <h2 className="mb-2 text-sm font-bold text-gray-500">⌛ Verlopen (geen straf) ({expired.length})</h2>
+                        <div className="space-y-1.5">
+                          {expired.map((a) => (
+                            <div key={a.id} className="rounded-lg bg-slate-700/30 px-3 py-2">
+                              <span className="text-xs text-gray-500">Dag {a.day} · 0pts</span>
+                              <p className="text-sm font-medium text-white/40">{a.challenges?.title}</p>
                             </div>
                           ))}
                         </div>
@@ -1045,6 +1059,14 @@ export default function DashboardClient({
                               +{a.challenges?.points} pts
                             </span>
                           </div>
+                          {/* Countdown to midnight */}
+                          <div className="mb-3 flex items-center gap-1.5 rounded-lg bg-slate-700/40 px-2.5 py-1.5">
+                            <span className="text-xs">⏰</span>
+                            <span className="text-[11px] font-medium text-gray-400">Verloopt over</span>
+                            <span className="ml-auto font-mono text-xs font-bold text-amber-400 tabular-nums">
+                              {String(nextDayCountdown.hours).padStart(2, "0")}:{String(nextDayCountdown.minutes).padStart(2, "0")}:{String(nextDayCountdown.seconds).padStart(2, "0")}
+                            </span>
+                          </div>
                           {a.target_player_name && (
                             <div className="mb-2 flex items-center gap-1.5">
                               <span className="text-sm">🎯</span>
@@ -1158,7 +1180,7 @@ export default function DashboardClient({
             <h2 className="text-2xl font-black text-white">Welkom in Guido&apos;s fokhok!</h2>
             <p className="mt-2 text-sm font-medium text-gray-300">Let the games begin</p>
             <div className="mt-4 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-400">
-              ⏳ Vanaf morgenvroeg 9u begint het voor echt...
+              ⏳ Vanaf morgen 9u begint het voor echt...
             </div>
             <button
               onClick={() => setShowWelcomeOverlay(false)}

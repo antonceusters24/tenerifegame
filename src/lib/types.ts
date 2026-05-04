@@ -32,7 +32,7 @@ export type Assignment = {
   user_id: string;
   challenge_id: string;
   day: number;
-  status: "active" | "pending" | "completed" | "skipped";
+  status: "active" | "pending" | "completed" | "skipped" | "expired";
   assigned_at: string;
   completed_at: string | null;
   target_player_name: string | null;
