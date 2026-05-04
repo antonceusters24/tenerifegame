@@ -34,12 +34,12 @@ function SlotMachine({ onComplete }: { onComplete: () => void }) {
           i < stopped ? s : emojis[Math.floor(Math.random() * emojis.length)]
         )
       );
-    }, 80);
+    }, 100);
 
-    const t1 = setTimeout(() => { stopped = 1; setSlots(prev => ["🍺", prev[1], prev[2]]); }, 1400);
-    const t2 = setTimeout(() => { stopped = 2; setSlots(prev => ["🍺", "🍺", prev[2]]); }, 2400);
-    const t3 = setTimeout(() => { stopped = 3; clearInterval(interval); setSlots(["🍺", "🍺", "🍺"]); setLabel("JACKPOT! 🎰"); }, 3400);
-    const t4 = setTimeout(onComplete, 4800);
+    const t1 = setTimeout(() => { stopped = 1; setSlots(prev => ["🍺", prev[1], prev[2]]); }, 2200);
+    const t2 = setTimeout(() => { stopped = 2; setSlots(prev => ["🍺", "🍺", prev[2]]); }, 3800);
+    const t3 = setTimeout(() => { stopped = 3; clearInterval(interval); setSlots(["🍺", "🍺", "🍺"]); setLabel("JACKPOT! 🎰"); }, 5400);
+    const t4 = setTimeout(onComplete, 7200);
 
     return () => {
       clearInterval(interval);
@@ -75,10 +75,10 @@ function OpenBeer({ onComplete }: { onComplete: () => void }) {
   );
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase("pop"), 1800);
-    const t2 = setTimeout(() => setPhase("pour"), 2800);
-    const t3 = setTimeout(() => setPhase("done"), 4000);
-    const t4 = setTimeout(onComplete, 5200);
+    const t1 = setTimeout(() => setPhase("pop"), 2800);
+    const t2 = setTimeout(() => setPhase("pour"), 4400);
+    const t3 = setTimeout(() => setPhase("done"), 6200);
+    const t4 = setTimeout(onComplete, 7800);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -113,11 +113,11 @@ function Shotgun({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 1200);
-    const t2 = setTimeout(() => setPhase(2), 2400);
-    const t3 = setTimeout(() => setPhase(3), 3600);
-    const t4 = setTimeout(() => setPhase(4), 4600);
-    const t5 = setTimeout(onComplete, 5800);
+    const t1 = setTimeout(() => setPhase(1), 1800);
+    const t2 = setTimeout(() => setPhase(2), 3600);
+    const t3 = setTimeout(() => setPhase(3), 5400);
+    const t4 = setTimeout(() => setPhase(4), 7000);
+    const t5 = setTimeout(onComplete, 8600);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -152,12 +152,12 @@ function Poker({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     const hand = ["🂡", "🂮", "🂭", "🂫", "🂪"];
-    const t1 = setTimeout(() => setCards(["🂡", "🂠", "🂠", "🂠", "🂠"]), 800);
-    const t2 = setTimeout(() => setCards(["🂡", "🂮", "🂠", "🂠", "🂠"]), 1500);
-    const t3 = setTimeout(() => setCards(["🂡", "🂮", "🂭", "🂠", "🂠"]), 2200);
-    const t4 = setTimeout(() => setCards(["🂡", "🂮", "🂭", "🂫", "🂠"]), 2900);
-    const t5 = setTimeout(() => { setCards(hand); setLabel("ROYAL FLUSH! 👑"); }, 3600);
-    const t6 = setTimeout(onComplete, 5200);
+    const t1 = setTimeout(() => setCards(["🂡", "🂠", "🂠", "🂠", "🂠"]), 1200);
+    const t2 = setTimeout(() => setCards(["🂡", "🂮", "🂠", "🂠", "🂠"]), 2400);
+    const t3 = setTimeout(() => setCards(["🂡", "🂮", "🂭", "🂠", "🂠"]), 3600);
+    const t4 = setTimeout(() => setCards(["🂡", "🂮", "🂭", "🂫", "🂠"]), 4800);
+    const t5 = setTimeout(() => { setCards(hand); setLabel("ROYAL FLUSH! 👑"); }, 6000);
+    const t6 = setTimeout(onComplete, 7800);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); clearTimeout(t6); };
   }, [onComplete]);
 
@@ -179,10 +179,10 @@ function Cigar({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 1600);
-    const t2 = setTimeout(() => setPhase(2), 3200);
-    const t3 = setTimeout(() => setPhase(3), 4600);
-    const t4 = setTimeout(onComplete, 6000);
+    const t1 = setTimeout(() => setPhase(1), 2400);
+    const t2 = setTimeout(() => setPhase(2), 4800);
+    const t3 = setTimeout(() => setPhase(3), 7000);
+    const t4 = setTimeout(onComplete, 8800);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, [onComplete]);
 
@@ -219,17 +219,17 @@ function ArmWrestle({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     // phase 0: grip — arms locked upright
-    const t1 = setTimeout(() => setPhase(1), 1400);          // countdown
-    const t2 = setTimeout(() => { setPhase(2); setShaking(true); }, 2800); // battle starts
+    const t1 = setTimeout(() => setPhase(1), 2000);          // countdown
+    const t2 = setTimeout(() => { setPhase(2); setShaking(true); }, 4000); // battle starts
     // battle: arms sway back and forth
-    const t3 = setTimeout(() => setArmAngle(-25), 3200);
-    const t4 = setTimeout(() => setArmAngle(20), 3900);
-    const t5 = setTimeout(() => setArmAngle(-30), 4500);
-    const t6 = setTimeout(() => setArmAngle(15), 5000);
-    const t7 = setTimeout(() => setArmAngle(-20), 5400);
+    const t3 = setTimeout(() => setArmAngle(-25), 4600);
+    const t4 = setTimeout(() => setArmAngle(20), 5500);
+    const t5 = setTimeout(() => setArmAngle(-30), 6300);
+    const t6 = setTimeout(() => setArmAngle(15), 7000);
+    const t7 = setTimeout(() => setArmAngle(-20), 7600);
     // left arm slams down — winner!
-    const t8 = setTimeout(() => { setPhase(3); setShaking(false); setArmAngle(-80); }, 5900);
-    const t9 = setTimeout(onComplete, 7500);
+    const t8 = setTimeout(() => { setPhase(3); setShaking(false); setArmAngle(-80); }, 8400);
+    const t9 = setTimeout(onComplete, 10200);
     return () => {
       [t1,t2,t3,t4,t5,t6,t7,t8,t9].forEach(clearTimeout);
     };
@@ -310,7 +310,7 @@ function Roulette({ onComplete }: { onComplete: () => void }) {
     let current = 0;
     let speed = 30;
     const interval = setInterval(() => {
-      speed *= 0.985;
+      speed *= 0.988;
       current += speed;
       setAngle(current);
       if (speed < 0.5) {
@@ -318,7 +318,7 @@ function Roulette({ onComplete }: { onComplete: () => void }) {
         setDone(true);
       }
     }, 30);
-    const t = setTimeout(onComplete, 5500);
+    const t = setTimeout(onComplete, 8000);
     return () => {
       clearInterval(interval);
       clearTimeout(t);
@@ -349,10 +349,10 @@ function Snus({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 1400);
-    const t2 = setTimeout(() => setPhase(2), 2800);
-    const t3 = setTimeout(() => setPhase(3), 4200);
-    const t4 = setTimeout(onComplete, 5800);
+    const t1 = setTimeout(() => setPhase(1), 2200);
+    const t2 = setTimeout(() => setPhase(2), 4400);
+    const t3 = setTimeout(() => setPhase(3), 6400);
+    const t4 = setTimeout(onComplete, 8200);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, [onComplete]);
 
@@ -381,10 +381,10 @@ function Wine({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 1500);
-    const t2 = setTimeout(() => setPhase(2), 3000);
-    const t3 = setTimeout(() => setPhase(3), 4500);
-    const t4 = setTimeout(onComplete, 6000);
+    const t1 = setTimeout(() => setPhase(1), 2400);
+    const t2 = setTimeout(() => setPhase(2), 4800);
+    const t3 = setTimeout(() => setPhase(3), 7000);
+    const t4 = setTimeout(onComplete, 8800);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, [onComplete]);
 
@@ -413,11 +413,11 @@ function Cocktail({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 1200);
-    const t2 = setTimeout(() => setPhase(2), 2500);
-    const t3 = setTimeout(() => setPhase(3), 3800);
-    const t4 = setTimeout(() => setPhase(4), 5000);
-    const t5 = setTimeout(onComplete, 6500);
+    const t1 = setTimeout(() => setPhase(1), 1800);
+    const t2 = setTimeout(() => setPhase(2), 3800);
+    const t3 = setTimeout(() => setPhase(3), 5800);
+    const t4 = setTimeout(() => setPhase(4), 7600);
+    const t5 = setTimeout(onComplete, 9400);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, [onComplete]);
 
