@@ -31,7 +31,7 @@ function buildTestDates(): string[] {
 const TEST_GAME_DATES = buildTestDates();
 const TEST_TRIP_START = TEST_GAME_DATES[0];
 const TEST_ACTIVATION_TIME = TEST_GAME_DATES[0] + "T00:00:00Z";
-const TEST_CHALLENGES_START = TEST_GAME_DATES[0] + "T00:01:00Z";
+const TEST_CHALLENGES_START = TEST_GAME_DATES[1] + "T00:00:00Z";
 const TEST_GAME_END = TEST_GAME_DATES[TEST_GAME_DATES.length - 1] + "T23:00:00Z";
 
 // Export the right set based on test mode
