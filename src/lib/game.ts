@@ -16,10 +16,10 @@ const PROD_ACTIVATION_TIME = "2026-05-12T17:00:00Z";
 const PROD_CHALLENGES_START = "2026-05-13T08:00:00Z";
 const PROD_GAME_END = "2026-05-18T23:00:00Z";
 
-// Test game dates (starting 2026-05-04, so game is active NOW)
+// Test game dates (starting 2026-05-03, so today May 4 = Day 2)
 function buildTestDates(): string[] {
   const dates: string[] = [];
-  const start = new Date("2026-05-04");
+  const start = new Date("2026-05-03");
   for (let i = 0; i < 7; i++) {
     const d = new Date(start);
     d.setDate(d.getDate() + i);
