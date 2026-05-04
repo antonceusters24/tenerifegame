@@ -20,6 +20,10 @@ export type Challenge = {
   description: string;
   difficulty: "easy" | "medium" | "hard";
   points: number;
+  requires_target: boolean;
+  created_by_admin: string | null;
+  bonus_description: string | null;
+  bonus_points: number;
   categories?: Category;
 };
 
@@ -32,6 +36,7 @@ export type Assignment = {
   assigned_at: string;
   completed_at: string | null;
   target_player_name: string | null;
+  bonus_completed: boolean;
   challenges?: Challenge;
 };
 
@@ -40,7 +45,8 @@ export type PendingConfirmation = {
   user_id: string;
   day: number;
   status: string;
-  challenges: { title: string; description: string; points: number; difficulty: string; categories: { name: string } | null } | null;
+  bonus_completed: boolean;
+  challenges: { title: string; description: string; points: number; difficulty: string; created_by_admin: string | null; bonus_description: string | null; bonus_points: number; categories: { name: string } | null } | null;
   users: { name: string } | null;
 };
 
@@ -48,6 +54,7 @@ export type ScoreboardEntry = {
   user_id: string;
   name: string;
   earned_points: number;
+  bonus_earned: number;
   penalty_points: number;
   total_points: number;
   completed_count: number;

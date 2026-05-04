@@ -397,7 +397,8 @@ export default function DashboardClient({
   const [viewingProfile, setViewingProfile] = useState<{ name: string; url: string } | null>(null);
   const [challengeCollapsed, setChallengeCollapsed] = useState(false);
   const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(true);
-  const [confirmAction, setConfirmAction] = useState<{ type: "complete" | "skip"; id: string; title: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: "complete" | "skip"; id: string; title: string; hasBonus?: boolean; bonusDesc?: string; bonusPoints?: number } | null>(null);
+  const [bonusSelected, setBonusSelected] = useState(false);
   const [historyTab, setHistoryTab] = useState<"challenges" | "approvals">("challenges");
   const [nextDayCountdown, setNextDayCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
 
@@ -443,14 +444,14 @@ export default function DashboardClient({
   const todayCount = currentDay ? assignments.filter((a) => a.day === currentDay).length : 0;
   const dailyLimitReached = todayCount >= 2;
 
-  async function handleComplete(id: string) {
+  async function handleComplete(id: string, bonusCompleted: boolean = false) {
     setLoading(id);
-    const res = await completeChallenge(id);
+    const res = await completeChallenge(id, bonusCompleted);
     if (!("error" in res)) {
       const newStatus = user.name === "Anton" ? "completed" : "pending";
       setAssignments((prev) =>
         prev.map((a) =>
-          a.id === id ? { ...a, status: newStatus as "completed" | "pending" } : a
+          a.id === id ? { ...a, status: newStatus as "completed" | "pending", bonus_completed: bonusCompleted } : a
         )
       );
     }
@@ -833,6 +834,9 @@ export default function DashboardClient({
                             {p.challenges?.description && (
                               <p className="mt-0.5 text-xs text-gray-400 leading-snug">{p.challenges.description}</p>
                             )}
+                            {p.bonus_completed && p.challenges?.bonus_points != null && p.challenges.bonus_points > 0 && (
+                              <p className="mt-1 text-xs font-bold text-yellow-400">🌟 Bonus geclaimd (+{p.challenges.bonus_points}pts)</p>
+                            )}
                           </div>
                           <span className="shrink-0 text-xs font-bold text-amber-400">+{p.challenges?.points}pts</span>
                         </div>
@@ -864,7 +868,7 @@ export default function DashboardClient({
 
       {/* Confirmation modal */}
       {confirmAction && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-6" onClick={() => setConfirmAction(null)}>
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-6" onClick={() => { setConfirmAction(null); setBonusSelected(false); }}>
           <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             {confirmAction.type === "complete" ? (
               <>
@@ -872,10 +876,24 @@ export default function DashboardClient({
                 <p className="mt-2 text-center text-lg font-extrabold text-white">Challenge kleir?</p>
                 <p className="mt-1 text-center text-sm text-gray-400">&ldquo;{confirmAction.title}&rdquo;</p>
                 <p className="mt-1 text-center text-xs text-emerald-400">Anton gaat da toch nog ff moeten bevestigen, dan krijgde uw puntjes x</p>
-                <div className="mt-5 flex gap-2">
-                  <button onClick={() => setConfirmAction(null)} className="flex-1 rounded-xl bg-slate-700 py-3 text-sm font-medium text-gray-300 transition hover:bg-slate-600 active:scale-95">Annuleer</button>
+                {confirmAction.hasBonus && confirmAction.bonusDesc && (
                   <button
-                    onClick={() => { handleComplete(confirmAction.id); setConfirmAction(null); }}
+                    type="button"
+                    onClick={() => setBonusSelected(!bonusSelected)}
+                    className={`mt-3 flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                      bonusSelected
+                        ? "border-yellow-500 bg-yellow-500/15 text-yellow-300"
+                        : "border-slate-600 bg-slate-800 text-gray-400"
+                    }`}
+                  >
+                    <span>{bonusSelected ? "✅" : "⬜"}</span>
+                    <span>🌟 Bonus ook gedaan? (+{confirmAction.bonusPoints}pts)</span>
+                  </button>
+                )}
+                <div className="mt-5 flex gap-2">
+                  <button onClick={() => { setConfirmAction(null); setBonusSelected(false); }} className="flex-1 rounded-xl bg-slate-700 py-3 text-sm font-medium text-gray-300 transition hover:bg-slate-600 active:scale-95">Annuleer</button>
+                  <button
+                    onClick={() => { handleComplete(confirmAction.id, bonusSelected); setConfirmAction(null); setBonusSelected(false); }}
                     disabled={loading === confirmAction.id}
                     className="flex-1 rounded-xl bg-emerald-500 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
                   >
@@ -886,9 +904,10 @@ export default function DashboardClient({
             ) : (
               <>
                 <p className="mb-1 text-center text-3xl">💀</p>
-                <p className="mt-2 text-center text-lg font-extrabold text-white">Zeker skippen?</p>
+                <p className="mt-2 text-center text-lg font-extrabold text-white">Skip?</p>
                 <p className="mt-1 text-center text-sm text-gray-400">&ldquo;{confirmAction.title}&rdquo;</p>
-                <p className="mt-1 text-center text-xs text-red-400">Da kost u 10 punten, lafaard!</p>
+                <p className="mt-2 text-center text-sm font-bold text-red-400">Skip = -10 punten, altijd.</p>
+                <p className="mt-1 text-center text-xs text-gray-500">Challenge nie gedaan voor middernacht? Dan wordt het automatisch geskipt.</p>
                 <div className="mt-5 flex gap-2">
                   <button onClick={() => setConfirmAction(null)} className="flex-1 rounded-xl bg-slate-700 py-3 text-sm font-medium text-gray-300 transition hover:bg-slate-600 active:scale-95">Terug</button>
                   <button
@@ -1032,14 +1051,32 @@ export default function DashboardClient({
                               <span className="text-sm font-bold text-orange-400">Target: {a.target_player_name}</span>
                             </div>
                           )}
+                          {a.challenges?.created_by_admin && (
+                            <p className="mb-1 text-[10px] text-gray-600">Van: {a.challenges.created_by_admin}</p>
+                          )}
                           {a.challenges?.description && (
-                            <p className="mt-2 text-sm leading-relaxed text-gray-400">
-                              {a.challenges.description}
-                            </p>
+                            <div className="mt-2 max-h-40 overflow-y-auto">
+                              <p className="text-sm leading-relaxed text-gray-400">
+                                {a.challenges.description}
+                              </p>
+                            </div>
+                          )}
+                          {a.challenges?.bonus_points != null && a.challenges.bonus_points > 0 && a.challenges.bonus_description && (
+                            <div className="mt-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2">
+                              <p className="text-xs font-bold text-yellow-400">🌟 Bonus (+{a.challenges.bonus_points} pts)</p>
+                              <p className="text-xs text-yellow-300/70">{a.challenges.bonus_description}</p>
+                            </div>
                           )}
                           <div className="mt-4 flex gap-2.5">
                             <button
-                              onClick={() => setConfirmAction({ type: "complete", id: a.id, title: a.challenges?.title || "" })}
+                              onClick={() => setConfirmAction({
+                                type: "complete",
+                                id: a.id,
+                                title: a.challenges?.title || "",
+                                hasBonus: (a.challenges?.bonus_points ?? 0) > 0,
+                                bonusDesc: a.challenges?.bonus_description ?? undefined,
+                                bonusPoints: a.challenges?.bonus_points ?? 0,
+                              })}
                               disabled={loading === a.id}
                               className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-teal-400 active:scale-95 disabled:opacity-50"
                             >

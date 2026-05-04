@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../actions";
 import { createClient } from "@/lib/supabase-server";
+import { getTable } from "@/lib/tables";
 import { ScoreboardEntry } from "@/lib/types";
 import ScoreboardClient from "./ScoreboardClient";
 
@@ -9,12 +10,12 @@ export default async function ScoreboardPage() {
   if (!user) redirect("/");
 
   const supabase = await createClient();
-  const { data: scores } = await supabase.from("scoreboard").select("*");
+  const { data: scores } = await supabase.from(getTable("scoreboard")).select("*");
 
   // Get all assignments with challenge details for all players
   const { data: allAssignments } = await supabase
-    .from("assignments")
-    .select("*, challenges(title, points, difficulty, categories(name)), users(name)")
+    .from(getTable("assignments"))
+    .select(`*, ${getTable("challenges")}(title, points, difficulty, categories(name)), users(name)`)
     .order("day", { ascending: true });
 
   // Chinese Fucking scores
@@ -28,7 +29,7 @@ export default async function ScoreboardPage() {
     .select("name, emoji, avatar_url")
     .eq("role", "player");
 
-  const entries = (scores as ScoreboardEntry[]) || [];
+  const entries = (scores as unknown as ScoreboardEntry[]) || [];
   const emojiMap: Record<string, string> = {};
   const avatarMap: Record<string, string | null> = {};
   (players || []).forEach((p) => {
@@ -36,11 +37,18 @@ export default async function ScoreboardPage() {
     avatarMap[p.name] = p.avatar_url || null;
   });
 
+  // Normalize nested data: when using test tables, the key might be "challenges_test" instead of "challenges"
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const normalizedAssignments = ((allAssignments as any[]) || []).map((a) => {
+    const challenges = a.challenges || a.challenges_test || null;
+    return { ...a, challenges };
+  });
+
   return (
     <ScoreboardClient
       user={user}
       entries={entries}
-      allAssignments={allAssignments || []}
+      allAssignments={normalizedAssignments}
       cfScores={cfScores || []}
       emojiMap={emojiMap}
       avatarMap={avatarMap}

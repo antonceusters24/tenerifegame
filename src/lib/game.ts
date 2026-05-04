@@ -1,4 +1,7 @@
-export const GAME_DATES = [
+import { isTestMode } from "./tables";
+
+// Production game dates
+const PROD_GAME_DATES = [
   "2026-05-12",
   "2026-05-13",
   "2026-05-14",
@@ -8,11 +11,35 @@ export const GAME_DATES = [
   "2026-05-18",
 ];
 
-export const TRIP_START = "2026-05-12";
+const PROD_TRIP_START = "2026-05-12";
+const PROD_ACTIVATION_TIME = "2026-05-12T17:00:00Z";
+const PROD_CHALLENGES_START = "2026-05-13T08:00:00Z";
+const PROD_GAME_END = "2026-05-18T23:00:00Z";
 
-export const ACTIVATION_TIME = "2026-05-12T17:00:00Z";
-const CHALLENGES_START = "2026-05-13T08:00:00Z";
-const GAME_END = "2026-05-18T23:00:00Z";
+// Test game dates (starting 2026-05-04, so game is active NOW)
+function buildTestDates(): string[] {
+  const dates: string[] = [];
+  const start = new Date("2026-05-04");
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    dates.push(d.toISOString().split("T")[0]);
+  }
+  return dates;
+}
+
+const TEST_GAME_DATES = buildTestDates();
+const TEST_TRIP_START = TEST_GAME_DATES[0];
+const TEST_ACTIVATION_TIME = TEST_GAME_DATES[0] + "T00:00:00Z";
+const TEST_CHALLENGES_START = TEST_GAME_DATES[0] + "T00:01:00Z";
+const TEST_GAME_END = TEST_GAME_DATES[TEST_GAME_DATES.length - 1] + "T23:00:00Z";
+
+// Export the right set based on test mode
+export const GAME_DATES = isTestMode ? TEST_GAME_DATES : PROD_GAME_DATES;
+export const TRIP_START = isTestMode ? TEST_TRIP_START : PROD_TRIP_START;
+export const ACTIVATION_TIME = isTestMode ? TEST_ACTIVATION_TIME : PROD_ACTIVATION_TIME;
+const CHALLENGES_START = isTestMode ? TEST_CHALLENGES_START : PROD_CHALLENGES_START;
+const GAME_END = isTestMode ? TEST_GAME_END : PROD_GAME_END;
 
 export function getLocalDateString(): string {
   const now = new Date();

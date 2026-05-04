@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../actions";
 import { createClient } from "@/lib/supabase-server";
+import { getTable } from "@/lib/tables";
 import AdminClient from "./AdminClient";
 
 export default async function AdminPage() {
@@ -17,15 +18,24 @@ export default async function AdminPage() {
     .order("name");
 
   const { data: challenges } = await supabase
-    .from("challenges")
+    .from(getTable("challenges"))
     .select("*, categories(*)")
     .order("created_at", { ascending: false });
+
+  // Get admin names for the creator dropdown
+  const { data: admins } = await supabase
+    .from("users")
+    .select("name")
+    .eq("role", "admin");
+
+  const adminNames = (admins || []).map((a) => a.name.replace(" (Admin)", ""));
 
   return (
     <AdminClient
       user={user}
       categories={categories || []}
       challenges={challenges || []}
+      adminNames={adminNames}
     />
   );
 }

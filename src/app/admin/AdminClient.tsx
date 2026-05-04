@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { User, Category } from "@/lib/types";
-import { addChallenge, deleteChallenge, logout } from "../actions";
+import { addChallenge, updateChallenge, deleteChallenge, logout } from "../actions";
 
 type ChallengeWithCat = {
   id: string;
@@ -11,17 +11,24 @@ type ChallengeWithCat = {
   difficulty: string;
   points: number;
   requires_target: boolean;
+  created_by_admin: string | null;
+  bonus_description: string | null;
+  bonus_points: number;
   categories: { name: string } | null;
 };
+
+const DIFFICULTY_POINTS: Record<string, number> = { easy: 5, medium: 10, hard: 20 };
 
 export default function AdminClient({
   user,
   categories,
   challenges: initialChallenges,
+  adminNames,
 }: {
   user: User;
   categories: Category[];
   challenges: ChallengeWithCat[];
+  adminNames: string[];
 }) {
   const [challenges, setChallenges] = useState(initialChallenges);
   const [tab, setTab] = useState<"add" | "list">("add");
@@ -30,6 +37,12 @@ export default function AdminClient({
   const [requiresTarget, setRequiresTarget] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [gotchaDesc, setGotchaDesc] = useState(false);
+  const [points, setPoints] = useState(10);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const currentAdminName = user.name.replace(" (Admin)", "");
 
   async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,9 +58,24 @@ export default function AdminClient({
       setRequiresTarget(false);
       setSelectedCategory("");
       setGotchaDesc(false);
+      setPoints(10);
       window.location.reload();
     }
     setLoading(false);
+  }
+
+  async function handleEdit(e: React.FormEvent<HTMLFormElement>, challengeId: string) {
+    e.preventDefault();
+    setEditLoading(true);
+    const form = new FormData(e.currentTarget);
+    const res = await updateChallenge(challengeId, form);
+    if ("error" in res) {
+      alert(res.error);
+    } else {
+      setEditingId(null);
+      window.location.reload();
+    }
+    setEditLoading(false);
   }
 
   async function handleDelete(id: string) {
@@ -55,6 +83,14 @@ export default function AdminClient({
     await deleteChallenge(id);
     setChallenges((prev) => prev.filter((c) => c.id !== id));
   }
+
+  // Get unique category names for subtabs
+  const categoryNames = Array.from(new Set(challenges.map((c) => c.categories?.name).filter(Boolean))) as string[];
+
+  // Filter challenges by category
+  const filteredChallenges = categoryFilter === "all"
+    ? challenges
+    : challenges.filter((c) => c.categories?.name === categoryFilter);
 
   const tabs = [
     { key: "add" as const, label: "➕ Add Challenge" },
@@ -121,6 +157,7 @@ export default function AdminClient({
             <h2 className="text-lg font-bold text-white">
               Add New Challenge
             </h2>
+            <input type="hidden" name="created_by_admin" value={currentAdminName} />
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-300">
                 Category
@@ -182,6 +219,7 @@ export default function AdminClient({
                   name="difficulty"
                   required
                   defaultValue="medium"
+                  onChange={(e) => setPoints(DIFFICULTY_POINTS[e.target.value] ?? 10)}
                   className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white"
                 >
                   <option value="easy">Easy (5pts)</option>
@@ -196,10 +234,38 @@ export default function AdminClient({
                 <input
                   name="points"
                   type="number"
-                  defaultValue={10}
+                  value={points}
+                  onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
                   min={1}
                   required
                   className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white"
+                />
+              </div>
+            </div>
+            {/* Bonus fields */}
+            <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-amber-400/80">🌟 Bonus (optioneel)</p>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-400">
+                  Bonus beschrijving
+                </label>
+                <textarea
+                  name="bonus_description"
+                  rows={2}
+                  className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white placeholder:text-gray-500"
+                  placeholder="Wat moet de speler extra doen voor bonuspunten?"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-400">
+                  Bonus punten
+                </label>
+                <input
+                  name="bonus_points"
+                  type="number"
+                  defaultValue={0}
+                  min={0}
+                  className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white"
                 />
               </div>
             </div>
@@ -228,36 +294,132 @@ export default function AdminClient({
 
         {/* Challenge List */}
         {tab === "list" && (
-          <div className="space-y-2">
-            {challenges.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/80 p-3 backdrop-blur"
+          <div className="space-y-3">
+            {/* Category subtabs */}
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setCategoryFilter("all")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  categoryFilter === "all"
+                    ? "bg-amber-500 text-black"
+                    : "bg-slate-700/50 text-gray-400 hover:bg-slate-700"
+                }`}
               >
-                <div>
-                  <span className="text-xs font-medium text-amber-400">
-                    {c.categories?.name}
-                  </span>
-                  <p className="font-semibold text-white">
-                    {c.title}
-                    {c.requires_target && <span className="ml-1 text-xs text-orange-400">🎯</span>}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {c.difficulty} · {c.points}pts
-                    {c.requires_target && " · op iemand anders"}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDelete(c.id)}
-                  className="rounded-lg bg-red-500/20 px-3 py-1 text-sm font-medium text-red-400 transition hover:bg-red-500/30"
+                Alles ({challenges.length})
+              </button>
+              {categoryNames.map((name) => {
+                const count = challenges.filter((c) => c.categories?.name === name).length;
+                return (
+                  <button
+                    key={name}
+                    onClick={() => setCategoryFilter(name)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                      categoryFilter === name
+                        ? "bg-amber-500 text-black"
+                        : "bg-slate-700/50 text-gray-400 hover:bg-slate-700"
+                    }`}
+                  >
+                    {name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+
+            {filteredChallenges.map((c) =>
+              editingId === c.id ? (
+                /* Inline edit form */
+                <form
+                  key={c.id}
+                  onSubmit={(e) => handleEdit(e, c.id)}
+                  className="space-y-3 rounded-xl border border-amber-500/30 bg-slate-800/90 p-4 backdrop-blur"
                 >
-                  Delete
-                </button>
-              </div>
-            ))}
-            {challenges.length === 0 && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-amber-400">✏️ Editing</p>
+                    <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-500 hover:text-white">✕ Cancel</button>
+                  </div>
+                  <select name="category_id" defaultValue={categories.find((cat) => cat.name === c.categories?.name)?.id || ""} required className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white">
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                  <input name="title" defaultValue={c.title} required className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" />
+                  <textarea name="description" defaultValue={c.description} rows={3} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" />
+                  <div className="flex gap-3">
+                    <select name="difficulty" defaultValue={c.difficulty} required className="flex-1 rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white">
+                      <option value="easy">Easy (5pts)</option>
+                      <option value="medium">Medium (10pts)</option>
+                      <option value="hard">Hard (20pts)</option>
+                    </select>
+                    <input name="points" type="number" defaultValue={c.points} min={1} required className="w-20 rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" />
+                  </div>
+                  <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-2">
+                    <p className="text-xs font-bold text-amber-400/80">🌟 Bonus</p>
+                    <textarea name="bonus_description" defaultValue={c.bonus_description || ""} rows={2} placeholder="Bonus beschrijving..." className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white placeholder:text-gray-500" />
+                    <input name="bonus_points" type="number" defaultValue={c.bonus_points || 0} min={0} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white" />
+                  </div>
+                  <input type="hidden" name="requires_target" value={c.requires_target ? "true" : ""} />
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-400">Door (admin)</label>
+                    <select name="created_by_admin" defaultValue={c.created_by_admin || ""} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white">
+                      <option value="">Onbekend</option>
+                      {adminNames.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button type="submit" disabled={editLoading} className="w-full rounded-lg bg-amber-500 py-2 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-50">
+                    {editLoading ? "Saving..." : "💾 Save"}
+                  </button>
+                </form>
+              ) : (
+                /* Challenge card */
+                <div
+                  key={c.id}
+                  className="rounded-xl border border-slate-700 bg-slate-800/80 p-3 backdrop-blur"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-amber-400">
+                          {c.categories?.name}
+                        </span>
+                        {c.bonus_points > 0 && (
+                          <span className="text-xs text-yellow-400">🌟 +{c.bonus_points}bonus</span>
+                        )}
+                      </div>
+                      <p className="font-semibold text-white">
+                        {c.title}
+                        {c.requires_target && <span className="ml-1 text-xs text-orange-400">🎯</span>}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {c.difficulty} · {c.points}pts
+                        {c.requires_target && " · op iemand anders"}
+                      </p>
+                      <p className="text-[10px] text-gray-600">
+                        Door: {c.created_by_admin || "Onbekend"}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1.5">
+                      <button
+                        onClick={() => setEditingId(c.id)}
+                        className="rounded-lg bg-slate-600/40 px-2.5 py-1 text-sm text-gray-300 transition hover:bg-slate-600"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        className="rounded-lg bg-red-500/20 px-2.5 py-1 text-sm font-medium text-red-400 transition hover:bg-red-500/30"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
+            {filteredChallenges.length === 0 && (
               <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-6 text-center text-gray-400">
-                No challenges yet. Add some!
+                {categoryFilter === "all" ? "No challenges yet. Add some!" : `Geen challenges in "${categoryFilter}"`}
               </div>
             )}
           </div>

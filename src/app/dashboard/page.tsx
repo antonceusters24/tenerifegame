@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../actions";
 import { createClient } from "@/lib/supabase-server";
+import { getTable } from "@/lib/tables";
 import { Assignment, PendingConfirmation } from "@/lib/types";
 import DashboardClient from "./DashboardClient";
 
@@ -13,19 +14,31 @@ export default async function DashboardPage() {
   const supabase = await createClient();
 
   const { data: assignments } = await supabase
-    .from("assignments")
-    .select("*, challenges(*, categories(*))")
+    .from(getTable("assignments"))
+    .select(`*, ${getTable("challenges")}(*, categories(*))`)
     .eq("user_id", user.id)
     .order("day", { ascending: true });
 
   // Pending assignments from OTHER players (for peer confirmation)
   const { data: pendingConfirmations } = await supabase
-    .from("assignments")
+    .from(getTable("assignments"))
     .select(
-      "*, challenges(title, description, points, difficulty, categories(name)), users(name)"
+      `*, ${getTable("challenges")}(title, description, points, difficulty, created_by_admin, bonus_description, bonus_points, categories(name)), users(name)`
     )
     .eq("status", "pending")
     .neq("user_id", user.id);
+
+  // Normalize nested challenge data (key might be "challenges_test" when using test tables)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const normalizedAssignments = ((assignments as any[]) || []).map((a) => {
+    const challenges = a.challenges || a.challenges_test || null;
+    return { ...a, challenges };
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const normalizedPending = ((pendingConfirmations as any[]) || []).map((a) => {
+    const challenges = a.challenges || a.challenges_test || null;
+    return { ...a, challenges };
+  });
 
   // All players with their emojis
   const { data: players } = await supabase
@@ -36,7 +49,7 @@ export default async function DashboardPage() {
 
   // End-screen ranks
   const [{ data: scoreRows }, { data: cfRows }] = await Promise.all([
-    supabase.from("scoreboard").select("user_id, name, total_points").order("total_points", { ascending: false }),
+    supabase.from(getTable("scoreboard")).select("user_id, name, total_points").order("total_points", { ascending: false }),
     supabase.from("chinese_fucking_scores").select("player_name, wins, points"),
   ]);
 
@@ -72,9 +85,9 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       user={user}
-      assignments={(assignments as unknown as Assignment[]) || []}
+      assignments={(normalizedAssignments as unknown as Assignment[]) || []}
       pendingConfirmations={
-        (pendingConfirmations as unknown as PendingConfirmation[]) || []
+        (normalizedPending as unknown as PendingConfirmation[]) || []
       }
       players={players || []}
       endStats={endStats}

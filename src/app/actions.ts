@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase-server";
+import { getTable } from "@/lib/tables";
 
 export async function validateLogin(
   name: string,
@@ -132,16 +133,17 @@ export async function updateEmoji(emoji: string) {
 
 // Player marks challenge as done → goes to "pending" (needs Anton's confirmation)
 // If the player IS Anton, auto-confirm (he's the game leader)
-export async function completeChallenge(assignmentId: string) {
+export async function completeChallenge(assignmentId: string, bonusCompleted: boolean = false) {
   const user = await getCurrentUser();
   if (!user) return { error: "Not logged in" };
 
   const supabase = await createClient();
   const newStatus = user.name === "Anton" ? "completed" : "pending";
   const { error } = await supabase
-    .from("assignments")
+    .from(getTable("assignments"))
     .update({
       status: newStatus,
+      bonus_completed: bonusCompleted,
       ...(newStatus === "completed" ? { completed_at: new Date().toISOString() } : {}),
     })
     .eq("id", assignmentId)
@@ -162,7 +164,7 @@ export async function confirmChallenge(assignmentId: string) {
   const supabase = await createClient();
 
   const { data: assignment } = await supabase
-    .from("assignments")
+    .from(getTable("assignments"))
     .select("user_id, status")
     .eq("id", assignmentId)
     .single();
@@ -179,7 +181,7 @@ export async function confirmChallenge(assignmentId: string) {
   if (confError) return { error: "Already confirmed" };
 
   await supabase
-    .from("assignments")
+    .from(getTable("assignments"))
     .update({ status: "completed", completed_at: new Date().toISOString() })
     .eq("id", assignmentId);
 
@@ -196,7 +198,7 @@ export async function rejectChallenge(assignmentId: string) {
   const supabase = await createClient();
 
   const { data: assignment } = await supabase
-    .from("assignments")
+    .from(getTable("assignments"))
     .select("user_id, status")
     .eq("id", assignmentId)
     .single();
@@ -207,7 +209,7 @@ export async function rejectChallenge(assignmentId: string) {
   if (assignment.status !== "pending") return { error: "Not pending" };
 
   await supabase
-    .from("assignments")
+    .from(getTable("assignments"))
     .update({ status: "active" })
     .eq("id", assignmentId);
 
@@ -225,7 +227,7 @@ export async function skipChallenge(assignmentId: string) {
 
   const supabase = await createClient();
   const { error } = await supabase
-    .from("assignments")
+    .from(getTable("assignments"))
     .update({ status: "skipped", completed_at: new Date().toISOString() })
     .eq("id", assignmentId)
     .eq("user_id", user.id)
@@ -240,10 +242,12 @@ export async function requestNewChallenge(day: number) {
   if (!user) return { error: "Not logged in" };
 
   const supabase = await createClient();
+  const challengesTable = getTable("challenges");
+  const assignmentsTable = getTable("assignments");
 
   // Enforce daily limit: max 2 challenges per person per day
   const { count: todayCount } = await supabase
-    .from("assignments")
+    .from(assignmentsTable)
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
     .eq("day", day);
@@ -254,28 +258,29 @@ export async function requestNewChallenge(day: number) {
 
   // Get ALL assigned challenge IDs across ALL players (global uniqueness)
   const { data: allAssigned } = await supabase
-    .from("assignments")
+    .from(assignmentsTable)
     .select("challenge_id");
 
   const usedIds = (allAssigned || []).map((a) => a.challenge_id);
 
   // Get category distribution for today (all players)
   const { data: todayAssignments } = await supabase
-    .from("assignments")
-    .select("challenge_id, challenges(category_id)")
+    .from(assignmentsTable)
+    .select(`challenge_id, ${challengesTable}(category_id)`)
     .eq("day", day);
 
   const categoryCounts: Record<string, number> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (todayAssignments || []).forEach((a: any) => {
-    const catId = a.challenges?.category_id;
+    const nested = a[challengesTable] || a.challenges;
+    const catId = nested?.category_id;
     if (catId) {
       categoryCounts[catId] = (categoryCounts[catId] || 0) + 1;
     }
   });
 
   // Get available challenges (not assigned to ANY player)
-  let query = supabase.from("challenges").select("id, category_id, requires_target");
+  let query = supabase.from(challengesTable).select("id, category_id, requires_target");
   if (usedIds.length > 0) {
     query = query.not("id", "in", `(${usedIds.join(",")})`);
   }
@@ -301,7 +306,7 @@ export async function requestNewChallenge(day: number) {
     targetPlayerName = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
   }
 
-  const { error } = await supabase.from("assignments").insert({
+  const { error } = await supabase.from(assignmentsTable).insert({
     user_id: user.id,
     challenge_id: random.id,
     day,
@@ -318,16 +323,45 @@ export async function addChallenge(formData: FormData) {
   if (!user || user.role !== "admin") return { error: "Unauthorized" };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("challenges").insert({
+  const bonusPoints = parseInt(formData.get("bonus_points") as string) || 0;
+  const { error } = await supabase.from(getTable("challenges")).insert({
     category_id: formData.get("category_id") as string,
     title: formData.get("title") as string,
     description: formData.get("description") as string,
     difficulty: formData.get("difficulty") as string,
     points: parseInt(formData.get("points") as string) || 10,
     requires_target: formData.get("requires_target") === "true",
+    created_by_admin: (formData.get("created_by_admin") as string) || user.name.replace(" (Admin)", ""),
+    bonus_description: (formData.get("bonus_description") as string) || null,
+    bonus_points: bonusPoints,
   });
 
   if (error) return { error: "Failed to add challenge" };
+  return { success: true };
+}
+
+export async function updateChallenge(challengeId: string, formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "admin") return { error: "Unauthorized" };
+
+  const supabase = await createClient();
+  const bonusPoints = parseInt(formData.get("bonus_points") as string) || 0;
+  const { error } = await supabase
+    .from(getTable("challenges"))
+    .update({
+      category_id: formData.get("category_id") as string,
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      difficulty: formData.get("difficulty") as string,
+      points: parseInt(formData.get("points") as string) || 10,
+      requires_target: formData.get("requires_target") === "true",
+      created_by_admin: (formData.get("created_by_admin") as string) || null,
+      bonus_description: (formData.get("bonus_description") as string) || null,
+      bonus_points: bonusPoints,
+    })
+    .eq("id", challengeId);
+
+  if (error) return { error: "Failed to update challenge" };
   return { success: true };
 }
 
@@ -337,7 +371,7 @@ export async function deleteChallenge(challengeId: string) {
 
   const supabase = await createClient();
   const { error } = await supabase
-    .from("challenges")
+    .from(getTable("challenges"))
     .delete()
     .eq("id", challengeId);
 
