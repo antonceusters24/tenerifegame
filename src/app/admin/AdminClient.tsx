@@ -43,6 +43,7 @@ export default function AdminClient({
   const [editBonusActive, setEditBonusActive] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [showMine, setShowMine] = useState(false);
 
   const currentAdminName = user.name.replace(" (Admin)", "");
 
@@ -76,7 +77,20 @@ export default function AdminClient({
       alert(res.error);
     } else {
       setEditingId(null);
-      window.location.reload();
+      // Update local state instead of reloading (keeps us on the list tab)
+      const updated = {
+        id: challengeId,
+        title: form.get("title") as string,
+        description: form.get("description") as string || "",
+        difficulty: form.get("difficulty") as string,
+        points: parseInt(form.get("points") as string) || 10,
+        requires_target: form.get("requires_target") === "true",
+        created_by_admin: form.get("created_by_admin") as string || null,
+        bonus_description: form.get("bonus_description") as string || null,
+        bonus_points: parseInt(form.get("bonus_points") as string) || 0,
+        categories: { name: categories.find((cat) => cat.id === form.get("category_id"))?.name || "" },
+      };
+      setChallenges((prev) => prev.map((c) => c.id === challengeId ? updated : c));
     }
     setEditLoading(false);
   }
@@ -90,10 +104,13 @@ export default function AdminClient({
   // Get unique category names for subtabs
   const categoryNames = Array.from(new Set(challenges.map((c) => c.categories?.name).filter(Boolean))) as string[];
 
-  // Filter challenges by category
-  const filteredChallenges = categoryFilter === "all"
+  // Filter challenges by category and "mine"
+  let filteredChallenges = categoryFilter === "all"
     ? challenges
     : challenges.filter((c) => c.categories?.name === categoryFilter);
+  if (showMine) {
+    filteredChallenges = filteredChallenges.filter((c) => c.created_by_admin === currentAdminName);
+  }
 
   const tabs = [
     { key: "add" as const, label: "➕ Add Challenge" },
@@ -324,6 +341,16 @@ export default function AdminClient({
                   </button>
                 );
               })}
+              <button
+                onClick={() => setShowMine(!showMine)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  showMine
+                    ? "bg-blue-500 text-white"
+                    : "bg-slate-700/50 text-gray-400 hover:bg-slate-700"
+                }`}
+              >
+                Mijn ({challenges.filter((c) => c.created_by_admin === currentAdminName).length})
+              </button>
             </div>
 
             {filteredChallenges.map((c) =>
