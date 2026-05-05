@@ -175,8 +175,8 @@ export async function confirmChallenge(assignmentId: string) {
   if (assignment.status !== "pending") return { error: "Not pending" };
 
   const { error: confError } = await supabase
-    .from("confirmations")
-    .upsert({ assignment_id: assignmentId, confirmed_by: user.id }, { onConflict: "assignment_id" });
+    .from(getTable("confirmations"))
+    .upsert({ assignment_id: assignmentId, confirmed_by: user.id }, { onConflict: "assignment_id,confirmed_by" });
 
   if (confError) return { error: confError.message };
 
@@ -206,7 +206,7 @@ export async function rejectChallenge(assignmentId: string) {
   if (!assignment) return { error: "Assignment not found" };
   if (assignment.user_id === user.id)
     return { error: "Can't reject your own challenge" };
-  if (assignment.status !== "pending") return { error: "Not pending" };
+  if (!["pending", "active"].includes(assignment.status)) return { error: "Not pending or active" };
 
   await supabase
     .from(getTable("assignments"))
@@ -214,7 +214,7 @@ export async function rejectChallenge(assignmentId: string) {
     .eq("id", assignmentId);
 
   await supabase
-    .from("confirmations")
+    .from(getTable("confirmations"))
     .delete()
     .eq("assignment_id", assignmentId);
 
@@ -258,7 +258,7 @@ export async function undoConfirmChallenge(assignmentId: string) {
 
   // Remove confirmation record
   await supabase
-    .from("confirmations")
+    .from(getTable("confirmations"))
     .delete()
     .eq("assignment_id", assignmentId);
 
@@ -423,30 +423,32 @@ export async function deleteChallenge(challengeId: string) {
   return { success: true };
 }
 
-// Chinese Fucking scoreboard - only Anton can update
-export async function updateChineseFuckingScore(
-  playerName: string,
-  field: "wins" | "points",
-  delta: number
-) {
+// Chinese Fucking sessions - only Anton can manage
+export async function addCFSession(scores: Record<string, number>, day: number) {
   const user = await getCurrentUser();
   if (!user || user.name !== "Anton") return { error: "Alleen Anton mag dit" };
 
   const supabase = await createClient();
-  const { data: current } = await supabase
-    .from("chinese_fucking_scores")
-    .select("*")
-    .eq("player_name", playerName)
+  const { data, error } = await supabase
+    .from("cf_sessions")
+    .insert({ scores, day })
+    .select()
     .single();
 
-  if (!current) return { error: "Player not found" };
+  if (error) return { error: "Failed to add session" };
+  return { success: true, session: data };
+}
 
-  const newValue = Math.max(0, (current[field] || 0) + delta);
+export async function deleteCFSession(sessionId: string) {
+  const user = await getCurrentUser();
+  if (!user || user.name !== "Anton") return { error: "Alleen Anton mag dit" };
+
+  const supabase = await createClient();
   const { error } = await supabase
-    .from("chinese_fucking_scores")
-    .update({ [field]: newValue })
-    .eq("player_name", playerName);
+    .from("cf_sessions")
+    .delete()
+    .eq("id", sessionId);
 
-  if (error) return { error: "Failed to update" };
+  if (error) return { error: "Failed to delete session" };
   return { success: true };
 }

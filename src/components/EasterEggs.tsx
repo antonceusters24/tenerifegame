@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getGameStatus } from "@/lib/game";
 
 type EasterEgg = {
   trigger: string;
@@ -40,7 +41,12 @@ export default function EasterEggs() {
   const [clicked, setClicked] = useState(false);
   const [position, setPosition] = useState({ top: 0, right: 0 });
 
+  const gameStatus = getGameStatus();
+
   useEffect(() => {
+    // Only show easter eggs during active game (not countdown or end screen)
+    if (gameStatus !== "active") return;
+
     // 50% chance to show an easter egg on mount
     if (Math.random() < 0.5) {
       const randomEgg = EASTER_EGGS[Math.floor(Math.random() * EASTER_EGGS.length)];
@@ -54,7 +60,7 @@ export default function EasterEggs() {
       const t = setTimeout(() => setVisible(true), delay);
       return () => clearTimeout(t);
     }
-  }, []);
+  }, [gameStatus]);
 
   useEffect(() => {
     if (clicked) {

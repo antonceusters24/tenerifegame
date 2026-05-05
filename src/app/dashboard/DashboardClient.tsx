@@ -165,7 +165,7 @@ function PodiumStage({ players, accentColor }: { players: PodiumPlayer[]; accent
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold text-gray-400">{p4.name}</p>
-            <p className="text-xs text-red-400">💀 {isRed ? "Grootste kakker" : "Wa ne sukkeleir"} · {p4.total_points}pt</p>
+            <p className="text-xs text-red-400">💀 {isRed ? "Vandeeg gepoept" : "Sukkeleir"} · {p4.total_points}pt</p>
           </div>
         </div>
       )}
@@ -370,6 +370,7 @@ export default function DashboardClient({
   user,
   assignments: initial,
   pendingConfirmations: initialPending,
+  recentConfirmed: initialRecentConfirmed,
   players: initialPlayers,
   endStats,
   podiumPlayers,
@@ -378,6 +379,7 @@ export default function DashboardClient({
   user: User;
   assignments: Assignment[];
   pendingConfirmations: PendingConfirmation[];
+  recentConfirmed?: PendingConfirmation[];
   players: { name: string; emoji: string; avatar_url: string | null }[];
   endStats?: { challengeRank: number; cfRank: number; totalPlayers: number };
   podiumPlayers?: PodiumPlayer[];
@@ -402,6 +404,8 @@ export default function DashboardClient({
   const [undoAction, setUndoAction] = useState<{ id: string; title: string } | null>(null);
   const [historyTab, setHistoryTab] = useState<"challenges" | "approvals">("challenges");
   const [nextDayCountdown, setNextDayCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const [recentlyConfirmed, setRecentlyConfirmed] = useState<PendingConfirmation[]>(initialRecentConfirmed || []);
+  const [showMenu, setShowMenu] = useState(false);
 
   const gameStatus = getGameStatus();
   const currentDay = getCurrentDay();
@@ -492,9 +496,11 @@ export default function DashboardClient({
 
   async function handleConfirm(id: string) {
     setLoading(id);
+    const confirmed = pending.find((p) => p.id === id);
     const res = await confirmChallenge(id);
     if (!("error" in res)) {
       setPending((prev) => prev.filter((p) => p.id !== id));
+      if (confirmed) setRecentlyConfirmed((prev) => [confirmed, ...prev]);
     } else if ("error" in res) {
       alert(res.error);
     }
@@ -506,6 +512,9 @@ export default function DashboardClient({
     const res = await rejectChallenge(id);
     if (!("error" in res)) {
       setPending((prev) => prev.filter((p) => p.id !== id));
+      setRecentlyConfirmed((prev) => prev.filter((r) => r.id !== id));
+    } else {
+      alert(res.error);
     }
     setLoading(null);
   }
@@ -517,6 +526,12 @@ export default function DashboardClient({
       setAssignments((prev) =>
         prev.map((a) => a.id === id ? { ...a, status: "active" as const, bonus_completed: false } : a)
       );
+      // If it was a recently confirmed other player's challenge, move it back to pending
+      const wasRecent = recentlyConfirmed.find((r) => r.id === id);
+      if (wasRecent) {
+        setRecentlyConfirmed((prev) => prev.filter((r) => r.id !== id));
+        setPending((prev) => [wasRecent, ...prev]);
+      }
     } else if ("error" in res) {
       alert(res.error);
     }
@@ -619,16 +634,8 @@ export default function DashboardClient({
               </p>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {gameStatus === "active" && (
-                <Link
-                  href="/gallery"
-                  className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
-                >
-                  📸
-                </Link>
-              )}
+            {/* Action buttons — compact menu */}
+            <div className="flex items-center gap-1.5 shrink-0 relative">
               {gameStatus === "active" && (
                 <Link
                   href="/scoreboard"
@@ -637,28 +644,53 @@ export default function DashboardClient({
                   🏆
                 </Link>
               )}
-              {(completed.length > 0 || skipped.length > 0 || expired.length > 0 || (user.name === "Anton" && gameStatus === "active")) && (
-                <button
-                  onClick={() => setShowHistory(true)}
-                  className="relative rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-sm font-medium text-amber-400 transition hover:bg-slate-700"
-                >
-                  📜 {completed.length + skipped.length + expired.length}
-                  {user.name === "Anton" && pending.length > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-black">
-                      {pending.length}
-                    </span>
-                  )}
-                </button>
+              <button
+                onClick={() => setShowMenu((v) => !v)}
+                className="relative rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" />
+                </svg>
+                {user.name === "Anton" && pending.length > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-black">
+                    {pending.length}
+                  </span>
+                )}
+              </button>
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                  <div className="absolute right-0 top-full mt-2 z-50 min-w-[160px] rounded-xl border border-slate-700/50 bg-slate-800/95 p-1.5 shadow-xl backdrop-blur">
+                    {(completed.length > 0 || skipped.length > 0 || expired.length > 0 || (user.name === "Anton" && gameStatus === "active")) && (
+                      <button
+                        onClick={() => { setShowMenu(false); setShowHistory(true); }}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition hover:bg-slate-700"
+                      >
+                        📜 <span>Rapportje</span>
+                        {user.name === "Anton" && pending.length > 0 && (
+                          <span className="ml-auto flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-black">
+                            {pending.length}
+                          </span>
+                        )}
+                      </button>
+                    )}
+                    {gameStatus === "active" && (
+                      <Link
+                        href="/gallery"
+                        onClick={() => setShowMenu(false)}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition hover:bg-slate-700"
+                      >
+                        📸 <span>Galerij</span>
+                      </Link>
+                    )}
+                    <form action={logout}>
+                      <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400 transition hover:bg-slate-700">
+                        🚪 <span>Uitloggen</span>
+                      </button>
+                    </form>
+                  </div>
+                </>
               )}
-              <form action={logout}>
-                <button className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700" title="Logout">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                </button>
-              </form>
             </div>
           </div>
 
@@ -861,8 +893,13 @@ export default function DashboardClient({
                         <div className="space-y-1.5">
                           {skipped.map((a) => (
                             <div key={a.id} className="rounded-lg bg-red-500/10 px-3 py-2">
-                              <span className="text-xs text-red-300">Dag {a.day} · -10pts</span>
-                              <p className="text-sm font-medium text-white/50 line-through">{a.challenges?.title}</p>
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <span className="text-xs text-red-300">Dag {a.day}</span>
+                                  <p className="text-sm font-medium text-white/50 line-through">{a.challenges?.title}</p>
+                                </div>
+                                <span className="shrink-0 rounded bg-red-500/20 px-1.5 py-0.5 text-xs font-bold text-red-400">-10pts</span>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -887,42 +924,66 @@ export default function DashboardClient({
                 {/* Approvals tab (Anton only) */}
                 {user.name === "Anton" && historyTab === "approvals" && (
                   <div className="space-y-3">
-                    {pending.length === 0 ? (
+                    {pending.length === 0 && recentlyConfirmed.length === 0 ? (
                       <p className="py-8 text-center text-sm text-gray-500">Niemand wacht op goedkeuring — top!</p>
-                    ) : pending.map((p) => (
-                      <div key={p.id} className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-amber-500/10 to-slate-800/80 p-4 shadow-lg">
-                        <div className="mb-3 flex items-start gap-3">
-                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-lg">👤</div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-amber-300">{p.users?.name} zegt: gedaan!</p>
-                            <p className="mt-0.5 font-bold text-white leading-snug">{p.challenges?.title}</p>
-                            {p.challenges?.description && (
-                              <p className="mt-0.5 text-xs text-gray-400 leading-snug">{p.challenges.description}</p>
-                            )}
-                            {p.bonus_completed && p.challenges?.bonus_points != null && p.challenges.bonus_points > 0 && (
-                              <p className="mt-1 text-xs font-bold text-yellow-400">🌟 Bonus geclaimd (+{p.challenges.bonus_points}pts)</p>
-                            )}
+                    ) : (
+                      <>
+                        {pending.map((p) => (
+                          <div key={p.id} className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-amber-500/10 to-slate-800/80 p-4 shadow-lg">
+                            <div className="mb-3 flex items-start gap-3">
+                              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-lg">👤</div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-amber-300">{p.users?.name} zegt: gedaan!</p>
+                                <p className="mt-0.5 font-bold text-white leading-snug">{p.challenges?.title}</p>
+                                {p.challenges?.description && (
+                                  <p className="mt-0.5 text-xs text-gray-400 leading-snug">{p.challenges.description}</p>
+                                )}
+                                {p.bonus_completed && p.challenges?.bonus_points != null && p.challenges.bonus_points > 0 && (
+                                  <p className="mt-1 text-xs font-bold text-yellow-400">🌟 Bonus geclaimd (+{p.challenges.bonus_points}pts)</p>
+                                )}
+                              </div>
+                              <span className="shrink-0 text-xs font-bold text-amber-400">+{p.challenges?.points}pts</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleConfirm(p.id)}
+                                disabled={loading === p.id}
+                                className="flex-1 rounded-xl bg-emerald-500 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
+                              >
+                                Alleej dan
+                              </button>
+                              <button
+                                onClick={() => handleReject(p.id)}
+                                disabled={loading === p.id}
+                                className="flex-1 rounded-xl border border-red-500/30 bg-red-900/30 py-2.5 text-sm font-extrabold text-red-400 transition hover:bg-red-900/50 active:scale-95 disabled:opacity-50"
+                              >
+                                Niejet jom
+                              </button>
+                            </div>
                           </div>
-                          <span className="shrink-0 text-xs font-bold text-amber-400">+{p.challenges?.points}pts</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleConfirm(p.id)}
-                            disabled={loading === p.id}
-                            className="flex-1 rounded-xl bg-emerald-500 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
-                          >
-                            Alleej dan
-                          </button>
-                          <button
-                            onClick={() => handleReject(p.id)}
-                            disabled={loading === p.id}
-                            className="flex-1 rounded-xl border border-red-500/30 bg-red-900/30 py-2.5 text-sm font-extrabold text-red-400 transition hover:bg-red-900/50 active:scale-95 disabled:opacity-50"
-                          >
-                            Niejet jom
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                        ))}
+                        {recentlyConfirmed.length > 0 && (
+                          <div className="mt-4">
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">Recent bevestigd</p>
+                            {recentlyConfirmed.map((r) => (
+                              <div key={r.id} className="mb-2 flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold text-emerald-300">{r.users?.name}</p>
+                                  <p className="text-sm font-medium text-white truncate">{r.challenges?.title}</p>
+                                </div>
+                                <button
+                                  onClick={() => handleUndo(r.id)}
+                                  disabled={loading === r.id}
+                                  className="ml-2 shrink-0 rounded-lg bg-red-500/20 px-2.5 py-1.5 text-[10px] font-bold text-red-400 transition hover:bg-red-500/30 active:scale-95 disabled:opacity-50"
+                                >
+                                  ↩ Undo
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </div>

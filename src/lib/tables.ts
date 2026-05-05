@@ -6,6 +6,7 @@ const isTestMode =
 const TABLE_MAP = {
   challenges: isTestMode ? "challenges_test" : "challenges",
   assignments: isTestMode ? "assignments_test" : "assignments",
+  confirmations: isTestMode ? "confirmations_test" : "confirmations",
   scoreboard: isTestMode ? "scoreboard_test" : "scoreboard",
 } as const;
 

@@ -40,6 +40,19 @@ export default async function DashboardPage() {
     .eq("status", "pending")
     .neq("user_id", user.id);
 
+  // Recently confirmed assignments from OTHER players (for undo — Anton only)
+  const { data: recentConfirmed } = user.name === "Anton"
+    ? await supabase
+        .from(getTable("assignments"))
+        .select(
+          `*, ${getTable("challenges")}(title, description, points, difficulty, created_by_admin, bonus_description, bonus_points, categories(name)), users(name)`
+        )
+        .eq("status", "completed")
+        .neq("user_id", user.id)
+        .order("completed_at", { ascending: false })
+        .limit(10)
+    : { data: null };
+
   // Normalize nested challenge data (key might be "challenges_test" when using test tables)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const normalizedAssignments = ((assignments as any[]) || []).map((a) => {
@@ -48,6 +61,11 @@ export default async function DashboardPage() {
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const normalizedPending = ((pendingConfirmations as any[]) || []).map((a) => {
+    const challenges = a.challenges || a.challenges_test || null;
+    return { ...a, challenges };
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const normalizedRecentConfirmed = ((recentConfirmed as any[]) || []).map((a) => {
     const challenges = a.challenges || a.challenges_test || null;
     return { ...a, challenges };
   });
@@ -60,17 +78,28 @@ export default async function DashboardPage() {
     .order("name");
 
   // End-screen ranks
-  const [{ data: scoreRows }, { data: cfRows }] = await Promise.all([
+  const [{ data: scoreRows }, { data: cfSessions }] = await Promise.all([
     supabase.from(getTable("scoreboard")).select("user_id, name, total_points").order("total_points", { ascending: false }),
-    supabase.from("chinese_fucking_scores").select("player_name, wins, points"),
+    supabase.from("cf_sessions").select("scores"),
   ]);
+
+  // Compute CF totals from sessions
+  const cfTotals: Record<string, number> = {};
+  (cfSessions || []).forEach((session: { scores: Record<string, number> }) => {
+    Object.entries(session.scores || {}).forEach(([name, pts]) => {
+      cfTotals[name] = (cfTotals[name] || 0) + pts;
+    });
+  });
+  const cfRows = Object.entries(cfTotals)
+    .map(([player_name, points]) => ({ player_name, points }))
+    .sort((a, b) => b.points - a.points);
 
   let endStats: { challengeRank: number; cfRank: number; totalPlayers: number } | undefined;
   let podiumPlayers: { name: string; avatar_url: string | null; emoji: string; total_points: number }[] = [];
   let cfPodiumPlayers: { name: string; avatar_url: string | null; emoji: string; total_points: number }[] = [];
   if (scoreRows && scoreRows.length > 0) {
     const challengeRank = scoreRows.findIndex((s) => s.user_id === user.id) + 1 || scoreRows.length;
-    const sortedCf = [...(cfRows || [])].sort((a, b) => b.wins - a.wins || b.points - a.points);
+    const sortedCf = [...(cfRows || [])].sort((a, b) => b.points - a.points);
     const cfIdx = sortedCf.findIndex((s) => s.player_name === user.name);
     const cfRank = cfIdx >= 0 ? cfIdx + 1 : sortedCf.length;
     endStats = { challengeRank, cfRank, totalPlayers: scoreRows.length };
@@ -100,6 +129,9 @@ export default async function DashboardPage() {
       assignments={(normalizedAssignments as unknown as Assignment[]) || []}
       pendingConfirmations={
         (normalizedPending as unknown as PendingConfirmation[]) || []
+      }
+      recentConfirmed={
+        (normalizedRecentConfirmed as unknown as PendingConfirmation[]) || []
       }
       players={players || []}
       endStats={endStats}

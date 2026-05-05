@@ -18,10 +18,11 @@ export default async function ScoreboardPage() {
     .select(`*, ${getTable("challenges")}(title, points, bonus_points, difficulty, categories(name)), users(name)`)
     .order("day", { ascending: true });
 
-  // Chinese Fucking scores
-  const { data: cfScores } = await supabase
-    .from("chinese_fucking_scores")
-    .select("*");
+  // Chinese Fucking sessions
+  const { data: cfSessions } = await supabase
+    .from("cf_sessions")
+    .select("*")
+    .order("created_at", { ascending: true });
 
   // All players with their emojis and avatars
   const { data: players } = await supabase
@@ -49,7 +50,7 @@ export default async function ScoreboardPage() {
       user={user}
       entries={entries}
       allAssignments={normalizedAssignments}
-      cfScores={cfScores || []}
+      cfSessions={cfSessions || []}
       emojiMap={emojiMap}
       avatarMap={avatarMap}
     />
