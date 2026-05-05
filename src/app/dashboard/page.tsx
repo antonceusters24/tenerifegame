@@ -3,6 +3,7 @@ import { getCurrentUser } from "../actions";
 import { createClient } from "@/lib/supabase-server";
 import { getTable } from "@/lib/tables";
 import { Assignment, PendingConfirmation } from "@/lib/types";
+import { getCurrentDay, GAME_DATES } from "@/lib/game";
 import DashboardClient from "./DashboardClient";
 
 export default async function DashboardPage() {
@@ -12,6 +13,17 @@ export default async function DashboardPage() {
   if (!user.pin_changed) redirect("/change-pin");
 
   const supabase = await createClient();
+
+  // Auto-expire old active assignments from previous days (backup for cron)
+  const currentDay = getCurrentDay();
+  if (currentDay && currentDay > 1) {
+    const expiredDays = Array.from({ length: currentDay - 1 }, (_, i) => i + 1);
+    await supabase
+      .from(getTable("assignments"))
+      .update({ status: "expired", completed_at: new Date().toISOString() })
+      .eq("status", "active")
+      .in("day", expiredDays);
+  }
 
   const { data: assignments } = await supabase
     .from(getTable("assignments"))

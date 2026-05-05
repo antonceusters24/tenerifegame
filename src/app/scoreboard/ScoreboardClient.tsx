@@ -187,6 +187,13 @@ export default function ScoreboardClient({
 
                   {isExpanded && (
                     <div className="rounded-b-2xl border border-t-0 border-slate-700/60 bg-slate-800/50 p-3 space-y-2">
+                      {/* Points breakdown */}
+                      <div className="flex flex-wrap gap-2 text-[10px] font-bold">
+                        {entry.earned_points > 0 && <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-400">+{entry.earned_points} challenges</span>}
+                        {entry.bonus_earned > 0 && <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-yellow-400">+{entry.bonus_earned} bonus</span>}
+                        {entry.penalty_points < 0 && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">{entry.penalty_points} penalty</span>}
+                      </div>
+
                       {activeOnes.length > 0 && (
                         <div>
                           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">Actieve challenge</p>
@@ -198,8 +205,8 @@ export default function ScoreboardClient({
                         </div>
                       )}
                       {completedOnes.length > 0 && (
-                        <div>
-                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">Gedaan ✅</p>
+                        <details open>
+                          <summary className="mb-1 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-emerald-400">Gedaan ✅ ({completedOnes.length})</summary>
                           <div className="space-y-1">
                             {completedOnes.map((a) => (
                               <div key={a.id} className="flex items-center justify-between rounded-lg bg-emerald-500/8 px-3 py-1.5 text-sm">
@@ -208,11 +215,11 @@ export default function ScoreboardClient({
                               </div>
                             ))}
                           </div>
-                        </div>
+                        </details>
                       )}
                       {skippedOnes.length > 0 && (
-                        <div>
-                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-red-400">Geskipt ❌</p>
+                        <details>
+                          <summary className="mb-1 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-red-400">Geskipt ❌ ({skippedOnes.length})</summary>
                           <div className="space-y-1">
                             {skippedOnes.map((a) => (
                               <div key={a.id} className="flex items-center justify-between rounded-lg bg-red-500/8 px-3 py-1.5 text-sm">
@@ -221,11 +228,11 @@ export default function ScoreboardClient({
                               </div>
                             ))}
                           </div>
-                        </div>
+                        </details>
                       )}
                       {expiredOnes.length > 0 && (
-                        <div>
-                          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-500">Te laaaaat ⌛</p>
+                        <details>
+                          <summary className="mb-1 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-gray-500">Te laaaaat ⌛ ({expiredOnes.length})</summary>
                           <div className="space-y-1">
                             {expiredOnes.map((a) => (
                               <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-700/30 px-3 py-1.5 text-sm">
@@ -234,7 +241,7 @@ export default function ScoreboardClient({
                               </div>
                             ))}
                           </div>
-                        </div>
+                        </details>
                       )}
                       {playerAssignments.length === 0 && (
                         <p className="py-2 text-center text-sm text-gray-500">Nog niks gedaan, tammen hol</p>
