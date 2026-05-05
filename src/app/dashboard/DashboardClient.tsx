@@ -561,7 +561,7 @@ export default function DashboardClient({
   }
 
   // Ban screen for specific users
-  const BANNED_USERS = ["Dries"];
+  const BANNED_USERS = ["Dries", "Lander"];
   if (BANNED_USERS.includes(user.name)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-red-950 via-slate-950 to-black p-6 text-center">
