@@ -221,6 +221,50 @@ export async function rejectChallenge(assignmentId: string) {
   return { success: true };
 }
 
+// Undo an accidental confirm — sets back to active (or pending if player has another active)
+export async function undoConfirmChallenge(assignmentId: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not logged in" };
+  if (user.name !== "Anton")
+    return { error: "Only Anton can undo confirmations" };
+
+  const supabase = await createClient();
+
+  const { data: assignment } = await supabase
+    .from(getTable("assignments"))
+    .select("user_id, status")
+    .eq("id", assignmentId)
+    .single();
+
+  if (!assignment) return { error: "Assignment not found" };
+  if (assignment.status !== "completed") return { error: "Not completed" };
+
+  // Check if player already has an active challenge
+  const { data: activeOnes } = await supabase
+    .from(getTable("assignments"))
+    .select("id")
+    .eq("user_id", assignment.user_id)
+    .in("status", ["active", "pending"])
+    .limit(1);
+
+  const newStatus = activeOnes && activeOnes.length > 0 ? "active" : "active";
+  // Always set to active — the player's current active one stays; 
+  // having 2 active is fine, the UI handles showing the oldest first
+
+  await supabase
+    .from(getTable("assignments"))
+    .update({ status: newStatus, completed_at: null, bonus_completed: false })
+    .eq("id", assignmentId);
+
+  // Remove confirmation record
+  await supabase
+    .from("confirmations")
+    .delete()
+    .eq("assignment_id", assignmentId);
+
+  return { success: true };
+}
+
 export async function skipChallenge(assignmentId: string) {
   const user = await getCurrentUser();
   if (!user) return { error: "Not logged in" };

@@ -15,13 +15,13 @@ import {
   requestNewChallenge,
   confirmChallenge,
   rejectChallenge,
+  undoConfirmChallenge,
   logout,
   updateEmoji,
 } from "../actions";
 import Link from "next/link";
 import RandomImage from "@/components/RandomImage";
 import ChallengeReveal from "@/components/ChallengeReveal";
-import EasterEggs from "@/components/EasterEggs";
 
 const DAY_NAMES = [
   { name: "De aankomst", emoji: "🛬", subtitle: "Stilte voor de storm" },
@@ -399,6 +399,7 @@ export default function DashboardClient({
   const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(true);
   const [confirmAction, setConfirmAction] = useState<{ type: "complete" | "skip"; id: string; title: string; hasBonus?: boolean; bonusDesc?: string; bonusPoints?: number } | null>(null);
   const [bonusSelected, setBonusSelected] = useState(false);
+  const [undoAction, setUndoAction] = useState<{ id: string; title: string } | null>(null);
   const [historyTab, setHistoryTab] = useState<"challenges" | "approvals">("challenges");
   const [nextDayCountdown, setNextDayCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
 
@@ -509,6 +510,20 @@ export default function DashboardClient({
     setLoading(null);
   }
 
+  async function handleUndo(id: string) {
+    setLoading(id);
+    const res = await undoConfirmChallenge(id);
+    if (!("error" in res)) {
+      setAssignments((prev) =>
+        prev.map((a) => a.id === id ? { ...a, status: "active" as const, bonus_completed: false } : a)
+      );
+    } else if ("error" in res) {
+      alert(res.error);
+    }
+    setLoading(null);
+    setUndoAction(null);
+  }
+
   const difficultyColor = {
     easy: "bg-emerald-900/50 text-emerald-300",
     medium: "bg-amber-900/50 text-amber-300",
@@ -569,7 +584,6 @@ export default function DashboardClient({
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4">
       {gameStatus === "active" && <RandomImage />}
-      {gameStatus === "active" && <EasterEggs />}
       <div className="relative z-10 mx-auto max-w-lg">
         {/* Header / Profile — hidden on end screen */}
         {gameStatus !== "after" && (
@@ -826,6 +840,14 @@ export default function DashboardClient({
                                 <div className="flex shrink-0 items-center gap-1 pt-0.5">
                                   <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-xs font-bold text-emerald-400">+{a.challenges?.points}pts</span>
                                   {a.bonus_completed && a.challenges?.bonus_points ? <span className="rounded bg-yellow-500/20 px-1.5 py-0.5 text-xs font-bold text-yellow-400">+{a.challenges.bonus_points} 🌟</span> : null}
+                                  {user.name === "Anton" && (
+                                    <button
+                                      onClick={() => setUndoAction({ id: a.id, title: a.challenges?.title || "Unknown" })}
+                                      className="ml-1 rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-bold text-red-400 transition hover:bg-red-500/30"
+                                    >
+                                      ↩
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -963,6 +985,28 @@ export default function DashboardClient({
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Undo confirmation modal */}
+      {undoAction && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-6" onClick={() => setUndoAction(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-1 text-center text-3xl">↩️</p>
+            <p className="mt-2 text-center text-lg font-extrabold text-white">Undo goedkeuring?</p>
+            <p className="mt-1 text-center text-sm text-gray-400">&ldquo;{undoAction.title}&rdquo;</p>
+            <p className="mt-2 text-center text-xs text-amber-400">Challenge wordt teruggezet naar actief bij die speler.</p>
+            <div className="mt-5 flex gap-2">
+              <button onClick={() => setUndoAction(null)} className="flex-1 rounded-xl bg-slate-700 py-3 text-sm font-medium text-gray-300 transition hover:bg-slate-600 active:scale-95">Annuleer</button>
+              <button
+                onClick={() => handleUndo(undoAction.id)}
+                disabled={loading === undoAction.id}
+                className="flex-1 rounded-xl border border-red-500/30 bg-red-900/50 py-3 text-sm font-extrabold text-red-300 transition hover:bg-red-900/70 active:scale-95 disabled:opacity-50"
+              >
+                Ja, undo!
+              </button>
+            </div>
           </div>
         </div>
       )}

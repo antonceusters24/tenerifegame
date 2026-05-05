@@ -20,6 +20,19 @@ const EASTER_EGGS: EasterEgg[] = [
   { trigger: "Sssst...", response: "Homoooooooow 📢", emoji: "🤫" },
   { trigger: "Knock knock... Who's there?", response: "Uw dikke moeder jongeuh", emoji: "🔘" },
   { trigger: "Druk voor motivatie", response: "Fucking loser, nietsnut, platteeuhhh", emoji: "💪" },
+  { trigger: "Gratis punten hier!", response: "Haha gij gelooft ook alles eh mongol", emoji: "🎰" },
+  { trigger: "Lander zegt...", response: "...altijd iets doms", emoji: "🗣️" },
+  { trigger: "Berten zijn IQ =", response: "Error 404: Not Found", emoji: "🔢" },
+  { trigger: "Klik voor een compliment", response: "Ge stinkt. Dat is geen compliment.", emoji: "💐" },
+  { trigger: "Geheime tip", response: "Drinkt meer water. Jk, drinkt bier.", emoji: "🤐" },
+  { trigger: "Druk als ge moedig zijt", response: "Ah kijk, nen dappere smansen", emoji: "🦁" },
+  { trigger: "Wat is het wachtwoord?", response: "BIER. Het is altijd bier.", emoji: "🔐" },
+  { trigger: "Vraag aan de orakel", response: "De orakel zegt: 'Drinkt uw pintje'", emoji: "🔮" },
+  { trigger: "Niet aankomen!", response: "Te laat. Ge hebt nu HIV.", emoji: "☣️" },
+  { trigger: "Tenerife hack ontdekt", response: "Ge zijt gehacked. Groetjes, Anton.", emoji: "💻" },
+  { trigger: "Klik voor abs", response: "Die krijgde nie van klikken ma van crunches kansen", emoji: "🏋️" },
+  { trigger: "Dries zegt hi", response: "Dries zegt eigenlijk nooit iets zinnigs", emoji: "👋" },
+  { trigger: "Geheime knop", response: "Anton krijgt +100pts. Merci!", emoji: "🔴" },
 ];
 
 export default function EasterEggs() {
@@ -29,8 +42,8 @@ export default function EasterEggs() {
   const [position, setPosition] = useState({ top: 0, right: 0 });
 
   useEffect(() => {
-    // 30% chance to show an easter egg on mount
-    if (Math.random() < 0.3) {
+    // 50% chance to show an easter egg on mount
+    if (Math.random() < 0.5) {
       const randomEgg = EASTER_EGGS[Math.floor(Math.random() * EASTER_EGGS.length)];
       setEgg(randomEgg);
       setPosition({
