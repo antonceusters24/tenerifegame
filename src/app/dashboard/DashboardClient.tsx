@@ -545,6 +545,27 @@ export default function DashboardClient({
     setUploading(false);
   }
 
+  // Ban screen for specific users
+  const BANNED_USERS = ["Lander", "Dries"];
+  if (BANNED_USERS.includes(user.name)) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-red-950 via-slate-950 to-black p-6 text-center">
+        <div className="animate-pulse text-8xl mb-6">🚫</div>
+        <h1 className="text-4xl font-black text-red-500 mb-3">U werd geblokkeerd</h1>
+        <p className="text-xl font-bold text-white mb-2">Gij hebt 100 ze</p>
+        <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-6 py-4">
+          <p className="text-sm text-red-300/80">Contacteer de admin als ge denkt dat dit een fout is.</p>
+          <p className="mt-1 text-xs text-red-400/50">(Het is geen fout.)</p>
+        </div>
+        <form action={logout} className="mt-8">
+          <button className="rounded-lg bg-slate-700/50 px-4 py-2 text-sm text-gray-400 hover:bg-slate-700">
+            Logout
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4">
       {gameStatus === "active" && <RandomImage />}
