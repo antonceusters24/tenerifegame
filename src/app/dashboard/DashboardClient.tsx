@@ -779,7 +779,7 @@ export default function DashboardClient({
 
               {/* Tabs (Anton only) */}
               {user.name === "Anton" && gameStatus === "active" && (
-                <div className="flex gap-1 border-b border-slate-700/60 px-4 py-2">
+                <div className="flex justify-center gap-1 border-b border-slate-700/60 px-4 py-2">
                   <button
                     onClick={() => setHistoryTab("challenges")}
                     className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
@@ -818,12 +818,16 @@ export default function DashboardClient({
                         <div className="space-y-1.5">
                           {completed.map((a) => (
                             <div key={a.id} className="rounded-lg bg-emerald-500/10 px-3 py-2">
-                              <div className="flex items-center gap-1.5 text-xs">
-                                <span className="text-emerald-300">Dag {a.day}</span>
-                                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 font-bold text-emerald-400">+{a.challenges?.points}pts</span>
-                                {a.bonus_completed && a.challenges?.bonus_points ? <span className="rounded bg-yellow-500/20 px-1.5 py-0.5 font-bold text-yellow-400">+{a.challenges.bonus_points} bonus 🌟</span> : null}
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <span className="text-xs text-emerald-300">Dag {a.day}</span>
+                                  <p className="text-sm font-medium text-white">{a.challenges?.title}</p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                                  <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-xs font-bold text-emerald-400">+{a.challenges?.points}pts</span>
+                                  {a.bonus_completed && a.challenges?.bonus_points ? <span className="rounded bg-yellow-500/20 px-1.5 py-0.5 text-xs font-bold text-yellow-400">+{a.challenges.bonus_points} 🌟</span> : null}
+                                </div>
                               </div>
-                              <p className="text-sm font-medium text-white">{a.challenges?.title}</p>
                             </div>
                           ))}
                         </div>
