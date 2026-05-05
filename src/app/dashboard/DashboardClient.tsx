@@ -598,7 +598,7 @@ export default function DashboardClient({
               <h1 className="text-xl font-extrabold text-white truncate">{user.name}</h1>
               <p className="text-xs text-gray-400">
                 {gameStatus === "active" && currentDay
-                  ? `Dag ${currentDay} · ${completed.length} challenges gedaan`
+                  ? `Dag ${currentDay} · ${completed.length} challenges volbracht...`
                   : gameStatus === "active"
                   ? "Game is live! 🎉"
                   : "Countdown loopt..."}
@@ -1103,7 +1103,7 @@ export default function DashboardClient({
                             </div>
                           )}
                           {a.challenges?.created_by_admin && (
-                            <p className="mb-1 text-[10px] text-gray-600">Deze challenge is van {a.challenges.created_by_admin}</p>
+                            <p className="mb-1 text-[10px] text-gray-600">Deze challenge komt van {a.challenges.created_by_admin}</p>
                           )}
                           {a.challenges?.description && (
                             <div className="mt-2 max-h-40 overflow-y-auto">
