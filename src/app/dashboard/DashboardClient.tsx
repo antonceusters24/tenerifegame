@@ -814,11 +814,15 @@ export default function DashboardClient({
                     )}
                     {completed.length > 0 && (
                       <div className="mb-4">
-                        <h2 className="mb-2 text-sm font-bold text-emerald-400">✅ Been there, done that (slay queen) ({completed.length})</h2>
+                        <h2 className="mb-2 text-sm font-bold text-emerald-400">Been there, done that (slay queen) ({completed.length})</h2>
                         <div className="space-y-1.5">
                           {completed.map((a) => (
                             <div key={a.id} className="rounded-lg bg-emerald-500/10 px-3 py-2">
-                              <span className="text-xs text-emerald-300">Dag {a.day} · +{a.challenges?.points}pts{a.bonus_completed && a.challenges?.bonus_points ? ` +${a.challenges.bonus_points} bonus` : ""}</span>
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <span className="text-emerald-300">Dag {a.day}</span>
+                                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 font-bold text-emerald-400">+{a.challenges?.points}pts</span>
+                                {a.bonus_completed && a.challenges?.bonus_points ? <span className="rounded bg-yellow-500/20 px-1.5 py-0.5 font-bold text-yellow-400">+{a.challenges.bonus_points} bonus 🌟</span> : null}
+                              </div>
                               <p className="text-sm font-medium text-white">{a.challenges?.title}</p>
                             </div>
                           ))}
@@ -827,7 +831,7 @@ export default function DashboardClient({
                     )}
                     {skipped.length > 0 && (
                       <div>
-                        <h2 className="mb-2 text-sm font-bold text-red-400">❌ Ik was beetje pussy voor deze ({skipped.length})</h2>
+                        <h2 className="mb-2 text-sm font-bold text-red-400">Ik was beetje pussy voor deze ({skipped.length})</h2>
                         <div className="space-y-1.5">
                           {skipped.map((a) => (
                             <div key={a.id} className="rounded-lg bg-red-500/10 px-3 py-2">
@@ -840,7 +844,7 @@ export default function DashboardClient({
                     )}
                     {expired.length > 0 && (
                       <div className="mt-4">
-                        <h2 className="mb-2 text-sm font-bold text-gray-500">⌛ Verlopen (geen straf) ({expired.length})</h2>
+                        <h2 className="mb-2 text-sm font-bold text-gray-500">Te laat bro (geen minpunten, enkel min aura) ({expired.length})</h2>
                         <div className="space-y-1.5">
                           {expired.map((a) => (
                             <div key={a.id} className="rounded-lg bg-slate-700/30 px-3 py-2">

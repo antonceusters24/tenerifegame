@@ -206,12 +206,15 @@ export default function ScoreboardClient({
                       )}
                       {completedOnes.length > 0 && (
                         <details open>
-                          <summary className="mb-1 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-emerald-400">Gedaan ✅ ({completedOnes.length})</summary>
+                          <summary className="mb-1 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-emerald-400">Gedaan ({completedOnes.length})</summary>
                           <div className="space-y-1">
                             {completedOnes.map((a) => (
                               <div key={a.id} className="flex items-center justify-between rounded-lg bg-emerald-500/8 px-3 py-1.5 text-sm">
                                 <span className="truncate text-gray-300">{a.challenges?.title || "Unknown"} <span className="text-xs text-gray-600">Dag {a.day}</span></span>
-                                <span className="ml-2 shrink-0 text-xs font-bold text-emerald-400">+{a.challenges?.points}{a.bonus_completed && a.challenges?.bonus_points ? ` +${a.challenges.bonus_points}🌟` : ""}</span>
+                                <span className="ml-2 flex shrink-0 items-center gap-1">
+                                  <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[11px] font-bold text-emerald-400">+{a.challenges?.points}</span>
+                                  {a.bonus_completed && a.challenges?.bonus_points ? <span className="rounded bg-yellow-500/20 px-1.5 py-0.5 text-[11px] font-bold text-yellow-400">+{a.challenges.bonus_points} 🌟</span> : null}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -219,7 +222,7 @@ export default function ScoreboardClient({
                       )}
                       {skippedOnes.length > 0 && (
                         <details>
-                          <summary className="mb-1 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-red-400">Geskipt ❌ ({skippedOnes.length})</summary>
+                          <summary className="mb-1 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-red-400">Geskipt ({skippedOnes.length})</summary>
                           <div className="space-y-1">
                             {skippedOnes.map((a) => (
                               <div key={a.id} className="flex items-center justify-between rounded-lg bg-red-500/8 px-3 py-1.5 text-sm">
@@ -232,7 +235,7 @@ export default function ScoreboardClient({
                       )}
                       {expiredOnes.length > 0 && (
                         <details>
-                          <summary className="mb-1 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-gray-500">Te laaaaat ⌛ ({expiredOnes.length})</summary>
+                          <summary className="mb-1 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-gray-500">Te laat makker ({expiredOnes.length})</summary>
                           <div className="space-y-1">
                             {expiredOnes.map((a) => (
                               <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-700/30 px-3 py-1.5 text-sm">
