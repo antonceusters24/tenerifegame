@@ -259,6 +259,44 @@ export default function ScoreboardClient({
                 Nog geen scores — begin te spelen mannen!
               </div>
             )}
+
+            {/* Fun stats */}
+            {entries.length > 0 && (() => {
+              const totalCompleted = entries.reduce((s, e) => s + e.completed_count, 0);
+              const totalSkipped = entries.reduce((s, e) => s + e.skipped_count, 0);
+              const totalExpired = entries.reduce((s, e) => s + (e.expired_count || 0), 0);
+              const totalBonus = entries.reduce((s, e) => s + e.bonus_earned, 0);
+              const leader = entries[0];
+              const loser = entries[entries.length - 1];
+              return (
+                <div className="mt-6 rounded-2xl border border-slate-700/40 bg-slate-800/30 p-4 space-y-3">
+                  <p className="text-center text-[10px] font-bold uppercase tracking-widest text-gray-500">📊 Tripstats</p>
+                  <div className="grid grid-cols-2 gap-2 text-center">
+                    <div className="rounded-xl bg-emerald-500/8 p-2">
+                      <p className="text-xl font-black text-emerald-400">{totalCompleted}</p>
+                      <p className="text-[10px] text-gray-500">challenges gedaan</p>
+                    </div>
+                    <div className="rounded-xl bg-red-500/8 p-2">
+                      <p className="text-xl font-black text-red-400">{totalSkipped}</p>
+                      <p className="text-[10px] text-gray-500">keer pussy geweest</p>
+                    </div>
+                    <div className="rounded-xl bg-yellow-500/8 p-2">
+                      <p className="text-xl font-black text-yellow-400">{totalBonus}</p>
+                      <p className="text-[10px] text-gray-500">bonuspunten verdiend</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-700/30 p-2">
+                      <p className="text-xl font-black text-gray-400">{totalExpired}</p>
+                      <p className="text-[10px] text-gray-500">keer te laat</p>
+                    </div>
+                  </div>
+                  {leader.total_points > 0 && leader.total_points !== loser.total_points && (
+                    <p className="text-center text-xs text-gray-500 italic">
+                      {leader.name} staat {leader.total_points - loser.total_points}pts voor op {loser.name} 💀
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -343,6 +381,35 @@ export default function ScoreboardClient({
                   );
                 })}
             </div>
+
+            {/* CF fun section */}
+            {cfScores.length > 0 && (() => {
+              const totalWins = cfScores.reduce((s, p) => s + (p.wins || 0), 0);
+              const totalPts = cfScores.reduce((s, p) => s + (p.points || 0), 0);
+              const sorted = [...cfScores].sort((a, b) => (b.points || 0) - (a.points || 0));
+              const topFucker = sorted[0];
+              const bottomFucker = sorted[sorted.length - 1];
+              return (
+                <div className="mt-6 rounded-2xl border border-red-900/30 bg-slate-800/30 p-4 space-y-3">
+                  <p className="text-center text-[10px] font-bold uppercase tracking-widest text-gray-500">👲 CF Statistieken</p>
+                  <div className="grid grid-cols-2 gap-2 text-center">
+                    <div className="rounded-xl bg-red-500/8 p-2">
+                      <p className="text-xl font-black text-red-400">{totalWins}</p>
+                      <p className="text-[10px] text-gray-500">games gespeeld</p>
+                    </div>
+                    <div className="rounded-xl bg-emerald-500/8 p-2">
+                      <p className="text-xl font-black text-emerald-400">{totalPts}</p>
+                      <p className="text-[10px] text-gray-500">totaal punten</p>
+                    </div>
+                  </div>
+                  {topFucker && bottomFucker && (topFucker.points || 0) > 0 && topFucker.player_name !== bottomFucker.player_name && (
+                    <p className="text-center text-xs text-gray-500 italic">
+                      {bottomFucker.player_name} wordt het meest Chinees gepoept 💩
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>

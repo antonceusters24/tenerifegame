@@ -176,9 +176,9 @@ export async function confirmChallenge(assignmentId: string) {
 
   const { error: confError } = await supabase
     .from("confirmations")
-    .insert({ assignment_id: assignmentId, confirmed_by: user.id });
+    .upsert({ assignment_id: assignmentId, confirmed_by: user.id }, { onConflict: "assignment_id" });
 
-  if (confError) return { error: "Already confirmed" };
+  if (confError) return { error: confError.message };
 
   await supabase
     .from(getTable("assignments"))
