@@ -12,8 +12,8 @@ const PROD_GAME_DATES = [
 ];
 
 const PROD_TRIP_START = "2026-05-12";
-const PROD_ACTIVATION_TIME = "2026-05-12T17:00:00Z";
-const PROD_CHALLENGES_START = "2026-05-13T08:00:00Z";
+const PROD_ACTIVATION_TIME = "2026-05-12T22:00:00Z";
+const PROD_CHALLENGES_START = "2026-05-13T10:00:00Z";
 const PROD_GAME_END = "2026-05-18T23:00:00Z";
 
 // Test game dates (starting 2026-05-03, so today May 5 = Day 3)
@@ -43,7 +43,8 @@ const GAME_END = isTestMode ? TEST_GAME_END : PROD_GAME_END;
 
 export function getLocalDateString(): string {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const tenerife = new Date(now.toLocaleString("en-US", { timeZone: "Atlantic/Canary" }));
+  return `${tenerife.getFullYear()}-${String(tenerife.getMonth() + 1).padStart(2, "0")}-${String(tenerife.getDate()).padStart(2, "0")}`;
 }
 
 export function getCurrentDay(): number | null {
