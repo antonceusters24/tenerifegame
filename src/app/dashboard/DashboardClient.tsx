@@ -838,7 +838,7 @@ export default function DashboardClient({
               <div className="flex justify-center gap-1 border-b border-slate-700/60 px-4 py-2">
                 <button
                   onClick={() => setHistoryTab("challenges")}
-                  className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                  className={`rounded-lg px-3 py-2 text-xs font-bold transition ${
                     historyTab === "challenges" ? "bg-slate-700 text-white" : "text-gray-500 hover:text-gray-300"
                   }`}
                 >
@@ -846,16 +846,16 @@ export default function DashboardClient({
                 </button>
                 <button
                   onClick={() => setHistoryTab("cf")}
-                  className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                  className={`rounded-lg px-3 py-2 text-xs font-bold transition ${
                     historyTab === "cf" ? "bg-red-500/20 text-red-400" : "text-gray-500 hover:text-gray-300"
                   }`}
                 >
-                  Chinese Fucking
+                  🀄 CF
                 </button>
                 {user.name === "Anton" && gameStatus === "active" && (
                   <button
                     onClick={() => setHistoryTab("approvals")}
-                    className={`relative rounded-lg px-3 py-2 text-sm font-bold transition ${
+                    className={`relative rounded-lg px-3 py-2 text-xs font-bold transition ${
                       historyTab === "approvals" ? "bg-amber-500/20 text-amber-400" : "text-gray-500 hover:text-gray-300"
                     }`}
                   >
@@ -942,77 +942,81 @@ export default function DashboardClient({
 
                 {/* Chinese Fucking tab */}
                 {historyTab === "cf" && (
-                  <div className="space-y-2">
+                  <div>
                     {cfSessions.length === 0 ? (
                       <p className="py-8 text-center text-sm text-gray-500">Nog geen sessies gespeeld</p>
                     ) : (
                       <>
-                        {/* Summary */}
-                        {(() => {
-                          const myTotal = cfSessions.reduce((sum, s) => sum + (s.scores[user.name] || 0), 0);
-                          const myWins = cfSessions.filter((s) => {
-                            const max = Math.max(...Object.values(s.scores));
-                            const winners = Object.entries(s.scores).filter(([, v]) => v === max);
-                            return winners.length === 1 && winners[0][0] === user.name;
-                          }).length;
-                          return (
-                            <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
-                              <p className="text-sm text-gray-400">Jouw totaal: <span className="font-bold text-red-400">{myTotal} punten</span> · <span className="font-bold text-amber-400">{myWins} wins</span> uit {cfSessions.length} sessies</p>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Day filter */}
-                        <div className="flex gap-1 mb-3 flex-wrap">
-                          <button
-                            onClick={() => setCfDayFilter("all")}
-                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition ${cfDayFilter === "all" ? "bg-red-500/20 text-red-400" : "bg-slate-700/40 text-gray-500"}`}
-                          >
-                            Alles
-                          </button>
-                          {[...new Set(cfSessions.map((s) => s.day))].sort().map((d) => (
+                        {/* Summary + filter row */}
+                        <div className="flex items-center justify-between mb-4">
+                          {(() => {
+                            const myTotal = cfSessions.reduce((sum, s) => sum + (s.scores[user.name] || 0), 0);
+                            const myWins = cfSessions.filter((s) => {
+                              const max = Math.max(...Object.values(s.scores));
+                              const winners = Object.entries(s.scores).filter(([, v]) => v === max);
+                              return winners.length === 1 && winners[0][0] === user.name;
+                            }).length;
+                            return (
+                              <p className="text-[11px] text-gray-500">
+                                <span className="font-bold text-red-400">{myTotal}</span> pts · <span className="font-bold text-amber-400">{myWins}</span> wins
+                              </p>
+                            );
+                          })()}
+                          <div className="flex gap-1">
                             <button
-                              key={d}
-                              onClick={() => setCfDayFilter(d)}
-                              className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition ${cfDayFilter === d ? "bg-red-500/20 text-red-400" : "bg-slate-700/40 text-gray-500"}`}
+                              onClick={() => setCfDayFilter("all")}
+                              className={`rounded px-1.5 py-0.5 text-[9px] font-bold transition ${cfDayFilter === "all" ? "bg-red-500/20 text-red-400" : "text-gray-600"}`}
                             >
-                              D{d}
+                              All
                             </button>
-                          ))}
+                            {[...new Set(cfSessions.map((s) => s.day))].sort().map((d) => (
+                              <button
+                                key={d}
+                                onClick={() => setCfDayFilter(d)}
+                                className={`rounded px-1.5 py-0.5 text-[9px] font-bold transition ${cfDayFilter === d ? "bg-red-500/20 text-red-400" : "text-gray-600"}`}
+                              >
+                                D{d}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
                         {/* Sessions */}
                         {(() => {
                           const filtered = [...cfSessions].filter((s) => cfDayFilter === "all" || s.day === cfDayFilter).reverse();
-                          return filtered.map((session, idx) => {
-                          const scores = session.scores || {};
-                          const maxPts = Math.max(...Object.values(scores), 0);
-                          const winners = Object.entries(scores).filter(([, v]) => v === maxPts && maxPts > 0);
-                          const winner = winners.length === 1 ? winners[0][0] : null;
                           return (
-                            <div key={session.id} className="rounded-xl border border-slate-700/40 bg-slate-800/40 px-3 py-2">
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[10px] font-bold text-gray-500">Dag {session.day} · Sessie {filtered.length - idx}</span>
-                                {winner && <span className="text-[10px] text-amber-400">🏆 {winner}</span>}
-                              </div>
-                              <div className="flex gap-2">
-                                {Object.entries(scores).sort(([, a], [, b]) => b - a).map(([name, pts]) => (
-                                  <div
-                                    key={name}
-                                    className={`flex-1 rounded-lg px-2 py-1.5 text-center ${
-                                      name === user.name
-                                        ? "bg-red-500/15 ring-1 ring-red-500/40"
-                                        : winner === name ? "bg-amber-500/10" : "bg-slate-700/30"
-                                    }`}
-                                  >
-                                    <p className={`text-[10px] truncate ${name === user.name ? "text-red-300 font-bold" : "text-gray-500"}`}>{name}</p>
-                                    <p className={`text-sm font-bold ${name === user.name ? "text-red-400" : winner === name ? "text-amber-400" : "text-gray-300"}`}>{pts}</p>
+                            <div className="space-y-3">
+                              {filtered.map((session, idx) => {
+                                const scores = session.scores || {};
+                                const maxPts = Math.max(...Object.values(scores), 0);
+                                const winners = Object.entries(scores).filter(([, v]) => v === maxPts && maxPts > 0);
+                                const winner = winners.length === 1 ? winners[0][0] : null;
+                                return (
+                                  <div key={session.id} className="rounded-lg bg-slate-800/30 px-3 py-2">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[9px] text-gray-600">Dag {session.day} · #{filtered.length - idx}</span>
+                                      {winner && <span className="text-[9px] text-amber-400/80">👑 {winner}</span>}
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                      {Object.entries(scores).sort(([, a], [, b]) => b - a).map(([name, pts]) => (
+                                        <div
+                                          key={name}
+                                          className={`flex-1 rounded py-1 text-center ${
+                                            name === user.name
+                                              ? "bg-red-500/10 ring-1 ring-red-500/30"
+                                              : "bg-slate-700/20"
+                                          }`}
+                                        >
+                                          <p className={`text-[9px] truncate ${name === user.name ? "text-red-300" : "text-gray-600"}`}>{name}</p>
+                                          <p className={`text-xs font-bold ${name === user.name ? "text-red-400" : winner === name ? "text-amber-400" : "text-gray-400"}`}>{pts}</p>
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                ))}
-                              </div>
+                                );
+                              })}
                             </div>
                           );
-                        });
                         })()}
                       </>
                     )}
