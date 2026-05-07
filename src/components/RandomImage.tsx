@@ -10,12 +10,22 @@ export default function RandomImage({ className = "" }: { className?: string }) 
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    fetch("/api/random-image")
+    // Track seen files in sessionStorage to avoid repeats
+    const STORAGE_KEY = "memes_seen";
+    const seen: string[] = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "[]");
+    const seenParam = seen.join(",");
+
+    fetch(`/api/random-image?seen=${encodeURIComponent(seenParam)}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.src) {
           setSrc(d.src);
           setType(d.type || "image");
+          // Track this file as seen; reset if we've cycled through all
+          if (d.file) {
+            const updated = seen.includes(d.file) ? [d.file] : [...seen, d.file];
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          }
         }
       })
       .catch(() => {});
@@ -36,13 +46,20 @@ export default function RandomImage({ className = "" }: { className?: string }) 
           playsInline
           preload="auto"
           onError={() => {
-            // If video fails, reload a new random media
-            fetch("/api/random-image")
+            // If video fails, reload a new random media (with seen tracking)
+            const STORAGE_KEY = "memes_seen";
+            const seen: string[] = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "[]");
+            const seenParam = seen.join(",");
+            fetch(`/api/random-image?seen=${encodeURIComponent(seenParam)}`)
               .then((r) => r.json())
               .then((d) => {
                 if (d.src) {
                   setSrc(d.src);
                   setType(d.type || "image");
+                  if (d.file) {
+                    const updated = seen.includes(d.file) ? [d.file] : [...seen, d.file];
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                  }
                 }
               })
               .catch(() => {});
