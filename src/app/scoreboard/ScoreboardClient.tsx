@@ -242,7 +242,7 @@ export default function ScoreboardClient({
                       {isExpanded && (
                         <div className="rounded-b-2xl border border-t-0 border-slate-700/60 bg-slate-800/50 p-3 space-y-2">
                           <div className="flex flex-wrap gap-2 text-[10px] font-bold">
-                            {entry.earned_points > 0 && <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-400">+{entry.earned_points} challenges</span>}
+                            {entry.earned_points > 0 && <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-400">+{entry.earned_points} punten</span>}
                             {entry.bonus_earned > 0 && <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-yellow-400">+{entry.bonus_earned} bonus</span>}
                             {entry.penalty_points < 0 && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">{entry.penalty_points} penalty</span>}
                           </div>

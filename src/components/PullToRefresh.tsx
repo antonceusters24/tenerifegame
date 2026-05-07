@@ -73,8 +73,8 @@ export default function PullToRefresh() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center"
-      style={{ transform: `translateY(${pullDistance - 40}px)` }}
+      className="fixed left-0 right-0 z-[9999] flex items-center justify-center pointer-events-none"
+      style={{ top: `${pullDistance - 44}px` }}
     >
       <div
         className={`h-8 w-8 rounded-full border-2 border-amber-400 border-t-transparent ${progress >= 1 ? "animate-spin" : ""}`}
