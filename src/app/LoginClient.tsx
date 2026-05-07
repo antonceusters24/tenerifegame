@@ -91,6 +91,7 @@ export default function LoginClient() {
             <option value="Hanne">Hanne (Admin)</option>
             <option value="Klaas">Klaas (Admin)</option>
             <option value="Remy">Remy (Admin)</option>
+            <option value="Cédric">Cédric (Admin)</option>
           </select>
         </div>
         <div>
