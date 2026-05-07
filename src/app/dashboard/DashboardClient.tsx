@@ -850,7 +850,7 @@ export default function DashboardClient({
                     historyTab === "cf" ? "bg-red-500/20 text-red-400" : "text-gray-500 hover:text-gray-300"
                   }`}
                 >
-                  🀄 CF
+                  Chinese Fucking
                 </button>
                 {user.name === "Anton" && gameStatus === "active" && (
                   <button
