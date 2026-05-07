@@ -307,19 +307,22 @@ export async function requestNewChallenge(day: number) {
 
   const usedIds = (allAssigned || []).map((a) => a.challenge_id);
 
-  // Get this player's full assignment history (all days) for category balance
+  // Get this player's full assignment history (all days) for category + difficulty balance
   const { data: myHistory } = await supabase
     .from(assignmentsTable)
-    .select(`challenge_id, day, ${challengesTable}(category_id)`)
+    .select(`challenge_id, day, ${challengesTable}(category_id, difficulty)`)
     .eq("user_id", user.id);
 
-  // Count per category for this player across all days
+  // Count per category and per difficulty for this player across all days
   const myCategories: Record<string, number> = {};
+  const myDifficulties: Record<string, number> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (myHistory || []).forEach((a: any) => {
     const nested = a[challengesTable] || a.challenges;
     const catId = nested?.category_id;
     if (catId) myCategories[catId] = (myCategories[catId] || 0) + 1;
+    const diff = nested?.difficulty;
+    if (diff) myDifficulties[diff] = (myDifficulties[diff] || 0) + 1;
   });
   const myTotal = Object.values(myCategories).reduce((s, n) => s + n, 0) || 0;
 
@@ -357,7 +360,7 @@ export async function requestNewChallenge(day: number) {
   const globalTodayTotal = Object.values(globalTodayCounts).reduce((s, n) => s + n, 0) || 0;
 
   // Get available challenges (not assigned to ANY player)
-  let query = supabase.from(challengesTable).select("id, category_id, requires_target");
+  let query = supabase.from(challengesTable).select("id, category_id, difficulty, requires_target");
   if (usedIds.length > 0) {
     query = query.not("id", "in", `(${usedIds.join(",")})`);
   }
@@ -410,10 +413,25 @@ export async function requestNewChallenge(day: number) {
     categoryWeights[catId] = weight;
   }
 
-  // Assign weight to each available challenge based on its category
+  // --- WEIGHTED DIFFICULTY SELECTION ---
+  // Balance difficulty distribution: each player should get ~equal easy/medium/hard
+  const difficultyLevels = [...new Set(available.map((c) => c.difficulty).filter(Boolean))];
+  const difficultyWeights: Record<string, number> = {};
+  for (const diff of difficultyLevels) {
+    let dWeight = 1.0;
+    if (myTotal > 0) {
+      const myDiffShare = (myDifficulties[diff] || 0) / myTotal;
+      const targetDiffShare = 1 / difficultyLevels.length; // ~0.33 for 3 difficulties
+      // Pull toward equal distribution
+      dWeight = Math.max(0.3, 1 + (targetDiffShare - myDiffShare) * 3);
+    }
+    difficultyWeights[diff] = dWeight;
+  }
+
+  // Assign weight to each available challenge based on its category AND difficulty
   const weighted = available.map((c) => ({
     ...c,
-    weight: categoryWeights[c.category_id] || 1,
+    weight: (categoryWeights[c.category_id] || 1) * (difficultyWeights[c.difficulty] || 1),
   }));
 
   // Weighted random selection
