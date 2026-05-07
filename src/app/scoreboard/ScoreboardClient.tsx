@@ -53,6 +53,7 @@ export default function ScoreboardClient({
   const [cfLoading, setCfLoading] = useState(false);
   const [cfSubTab, setCfSubTab] = useState<"ranking" | "stats" | "sessies">("ranking");
   const [challengeSubTab, setChallengeSubTab] = useState<"ranking" | "stats">("ranking");
+  const [cfDayFilter, setCfDayFilter] = useState<number | "all">("all");
   const [viewingProfile, setViewingProfile] = useState<{ name: string; url: string } | null>(null);
 
   const isAnton = user.name === "Anton";
@@ -979,35 +980,60 @@ export default function ScoreboardClient({
                       Nog geen sessies gespeeld
                     </div>
                   )}
-                  <div className="space-y-2">
-                    {[...cfSessions].reverse().map((session, idx) => {
-                      const scores = session.scores || {};
-                      const maxPts = Math.max(...Object.values(scores), 0);
-                      const winners = Object.entries(scores).filter(([, v]) => v === maxPts && maxPts > 0);
-                      const winner = winners.length === 1 ? winners[0][0] : null;
-                      return (
-                        <div key={session.id} className="rounded-xl border border-slate-700/40 bg-slate-800/40 px-3 py-2">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-bold text-gray-500">Dag {session.day} · Sessie {cfSessions.length - idx}</span>
-                            <div className="flex items-center gap-2">
-                              {winner && <span className="text-[10px] text-amber-400">🏆 {winner}</span>}
-                              {isAnton && (
-                                <button onClick={() => handleDeleteSession(session.id)} className="text-[10px] text-red-500/60 hover:text-red-400">✕</button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            {CF_PLAYERS.map((p) => (
-                              <div key={p} className={`flex-1 rounded-lg px-2 py-1 text-center ${winner === p ? "bg-amber-500/15" : "bg-slate-700/30"}`}>
-                                <p className="text-[10px] text-gray-500 truncate">{p}</p>
-                                <p className={`text-sm font-bold ${winner === p ? "text-amber-400" : "text-gray-300"}`}>{scores[p] || 0}</p>
+                  {cfSessions.length > 0 && (
+                    <>
+                      {/* Day filter */}
+                      <div className="flex gap-1 mb-3 flex-wrap">
+                        <button
+                          onClick={() => setCfDayFilter("all")}
+                          className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition ${cfDayFilter === "all" ? "bg-red-500/20 text-red-400" : "bg-slate-700/40 text-gray-500"}`}
+                        >
+                          Alles
+                        </button>
+                        {[...new Set(cfSessions.map((s) => s.day))].sort().map((d) => (
+                          <button
+                            key={d}
+                            onClick={() => setCfDayFilter(d)}
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition ${cfDayFilter === d ? "bg-red-500/20 text-red-400" : "bg-slate-700/40 text-gray-500"}`}
+                          >
+                            D{d}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="space-y-2">
+                        {(() => {
+                          const filtered = [...cfSessions].filter((s) => cfDayFilter === "all" || s.day === cfDayFilter).reverse();
+                          return filtered.map((session, idx) => {
+                            const scores = session.scores || {};
+                            const maxPts = Math.max(...Object.values(scores), 0);
+                            const winners = Object.entries(scores).filter(([, v]) => v === maxPts && maxPts > 0);
+                            const winner = winners.length === 1 ? winners[0][0] : null;
+                            return (
+                              <div key={session.id} className="rounded-xl border border-slate-700/40 bg-slate-800/40 px-3 py-2">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[10px] font-bold text-gray-500">Dag {session.day} · Sessie {filtered.length - idx}</span>
+                                  <div className="flex items-center gap-2">
+                                    {winner && <span className="text-[10px] text-amber-400">🏆 {winner}</span>}
+                                    {isAnton && (
+                                      <button onClick={() => handleDeleteSession(session.id)} className="text-[10px] text-red-500/60 hover:text-red-400">✕</button>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  {CF_PLAYERS.map((p) => (
+                                    <div key={p} className={`flex-1 rounded-lg px-2 py-1 text-center ${winner === p ? "bg-amber-500/15" : "bg-slate-700/30"}`}>
+                                      <p className="text-[10px] text-gray-500 truncate">{p}</p>
+                                      <p className={`text-sm font-bold ${winner === p ? "text-amber-400" : "text-gray-300"}`}>{scores[p] || 0}</p>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>

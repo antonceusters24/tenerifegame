@@ -410,6 +410,7 @@ export default function DashboardClient({
   const [nextDayCountdown, setNextDayCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [recentlyConfirmed, setRecentlyConfirmed] = useState<PendingConfirmation[]>(initialRecentConfirmed || []);
   const [showMenu, setShowMenu] = useState(false);
+  const [cfDayFilter, setCfDayFilter] = useState<number | "all">("all");
 
   const gameStatus = getGameStatus();
   const currentDay = getCurrentDay();
@@ -961,8 +962,29 @@ export default function DashboardClient({
                           );
                         })()}
 
+                        {/* Day filter */}
+                        <div className="flex gap-1 mb-3 flex-wrap">
+                          <button
+                            onClick={() => setCfDayFilter("all")}
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition ${cfDayFilter === "all" ? "bg-red-500/20 text-red-400" : "bg-slate-700/40 text-gray-500"}`}
+                          >
+                            Alles
+                          </button>
+                          {[...new Set(cfSessions.map((s) => s.day))].sort().map((d) => (
+                            <button
+                              key={d}
+                              onClick={() => setCfDayFilter(d)}
+                              className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition ${cfDayFilter === d ? "bg-red-500/20 text-red-400" : "bg-slate-700/40 text-gray-500"}`}
+                            >
+                              D{d}
+                            </button>
+                          ))}
+                        </div>
+
                         {/* Sessions */}
-                        {[...cfSessions].reverse().map((session, idx) => {
+                        {(() => {
+                          const filtered = [...cfSessions].filter((s) => cfDayFilter === "all" || s.day === cfDayFilter).reverse();
+                          return filtered.map((session, idx) => {
                           const scores = session.scores || {};
                           const maxPts = Math.max(...Object.values(scores), 0);
                           const winners = Object.entries(scores).filter(([, v]) => v === maxPts && maxPts > 0);
@@ -970,7 +992,7 @@ export default function DashboardClient({
                           return (
                             <div key={session.id} className="rounded-xl border border-slate-700/40 bg-slate-800/40 px-3 py-2">
                               <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[10px] font-bold text-gray-500">Dag {session.day} · Sessie {cfSessions.length - idx}</span>
+                                <span className="text-[10px] font-bold text-gray-500">Dag {session.day} · Sessie {filtered.length - idx}</span>
                                 {winner && <span className="text-[10px] text-amber-400">🏆 {winner}</span>}
                               </div>
                               <div className="flex gap-2">
@@ -990,7 +1012,8 @@ export default function DashboardClient({
                               </div>
                             </div>
                           );
-                        })}
+                        });
+                        })()}
                       </>
                     )}
                   </div>
