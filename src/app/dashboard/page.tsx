@@ -80,7 +80,7 @@ export default async function DashboardPage() {
   // End-screen ranks
   const [{ data: scoreRows }, { data: cfSessions }] = await Promise.all([
     supabase.from(getTable("scoreboard")).select("user_id, name, total_points").order("total_points", { ascending: false }),
-    supabase.from("cf_sessions").select("scores"),
+    supabase.from("cf_sessions").select("id, day, scores").order("day").order("created_at"),
   ]);
 
   // Compute CF totals from sessions
@@ -156,6 +156,7 @@ export default async function DashboardPage() {
       podiumPlayers={podiumPlayers}
       cfPodiumPlayers={cfPodiumPlayers}
       challengeCounts={challengeCounts}
+      cfSessions={(cfSessions as { id: string; day: number; scores: Record<string, number> }[]) || []}
     />
   );
 }

@@ -376,6 +376,7 @@ export default function DashboardClient({
   podiumPlayers,
   cfPodiumPlayers,
   challengeCounts,
+  cfSessions,
 }: {
   user: User;
   assignments: Assignment[];
@@ -386,6 +387,7 @@ export default function DashboardClient({
   podiumPlayers?: PodiumPlayer[];
   cfPodiumPlayers?: PodiumPlayer[];
   challengeCounts?: { name: string; count: number }[];
+  cfSessions: { id: string; day: number; scores: Record<string, number> }[];
 }) {
   const [assignments, setAssignments] = useState(initial);
   const [pending, setPending] = useState(initialPending);
@@ -404,7 +406,7 @@ export default function DashboardClient({
   const [confirmAction, setConfirmAction] = useState<{ type: "complete" | "skip"; id: string; title: string; hasBonus?: boolean; bonusDesc?: string; bonusPoints?: number } | null>(null);
   const [bonusSelected, setBonusSelected] = useState(false);
   const [undoAction, setUndoAction] = useState<{ id: string; title: string } | null>(null);
-  const [historyTab, setHistoryTab] = useState<"challenges" | "approvals">("challenges");
+  const [historyTab, setHistoryTab] = useState<"challenges" | "cf" | "approvals">("challenges");
   const [nextDayCountdown, setNextDayCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [recentlyConfirmed, setRecentlyConfirmed] = useState<PendingConfirmation[]>(initialRecentConfirmed || []);
   const [showMenu, setShowMenu] = useState(false);
@@ -668,7 +670,7 @@ export default function DashboardClient({
                         onClick={() => { setShowMenu(false); setShowHistory(true); }}
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition hover:bg-slate-700"
                       >
-                        📜 <span>Rapportje</span>
+                        <span>Mijn Prestaases</span>
                         {user.name === "Anton" && pending.length > 0 && (
                           <span className="ml-auto flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-black">
                             {pending.length}
@@ -682,12 +684,12 @@ export default function DashboardClient({
                         onClick={() => setShowMenu(false)}
                         className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition hover:bg-slate-700"
                       >
-                        📸 <span>Galerij</span>
+                        <span>'t Galerieke</span>
                       </Link>
                     )}
                     <form action={logout}>
                       <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400 transition hover:bg-slate-700">
-                        🚪 <span>Uitloggen</span>
+                        <span>Juuuuuw</span>
                       </button>
                     </form>
                   </div>
@@ -827,41 +829,49 @@ export default function DashboardClient({
             <div className="flex flex-col h-full" onClick={(e) => e.stopPropagation()}>
               {/* Modal header */}
               <div className="flex items-center justify-between border-b border-slate-700/60 px-4 py-4">
-                <p className="text-base font-extrabold text-white">📜 Mijn rapportje</p>
+                <p className="text-base font-extrabold text-white">Mijn rapportje</p>
                 <button onClick={() => setShowHistory(false)} className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-sm text-gray-400 hover:text-white">✕ Sluiten</button>
               </div>
 
-              {/* Tabs (Anton only) */}
-              {user.name === "Anton" && gameStatus === "active" && (
-                <div className="flex justify-center gap-1 border-b border-slate-700/60 px-4 py-2">
-                  <button
-                    onClick={() => setHistoryTab("challenges")}
-                    className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
-                      historyTab === "challenges" ? "bg-slate-700 text-white" : "text-gray-500 hover:text-gray-300"
-                    }`}
-                  >
-                    📜 Challenges
-                  </button>
+              {/* Tabs */}
+              <div className="flex justify-center gap-1 border-b border-slate-700/60 px-4 py-2">
+                <button
+                  onClick={() => setHistoryTab("challenges")}
+                  className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                    historyTab === "challenges" ? "bg-slate-700 text-white" : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  Challenges
+                </button>
+                <button
+                  onClick={() => setHistoryTab("cf")}
+                  className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                    historyTab === "cf" ? "bg-red-500/20 text-red-400" : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  Chinese Fucking
+                </button>
+                {user.name === "Anton" && gameStatus === "active" && (
                   <button
                     onClick={() => setHistoryTab("approvals")}
-                    className={`relative rounded-lg px-4 py-2 text-sm font-bold transition ${
+                    className={`relative rounded-lg px-3 py-2 text-sm font-bold transition ${
                       historyTab === "approvals" ? "bg-amber-500/20 text-amber-400" : "text-gray-500 hover:text-gray-300"
                     }`}
                   >
-                    👑 Goedkeuring
+                    Goedkeuring
                     {pending.length > 0 && (
                       <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-black">
                         {pending.length}
                       </span>
                     )}
                   </button>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-4">
-                {/* Challenges tab (or default for non-Anton) */}
-                {(user.name !== "Anton" || historyTab === "challenges") && (
+                {/* Challenges tab */}
+                {historyTab === "challenges" && (
                   <>
                     {completed.length === 0 && skipped.length === 0 && expired.length === 0 && (
                       <p className="py-8 text-center text-sm text-gray-500">Nog geen challenges gedaan of geskipt.</p>
@@ -927,6 +937,63 @@ export default function DashboardClient({
                       </div>
                     )}
                   </>
+                )}
+
+                {/* Chinese Fucking tab */}
+                {historyTab === "cf" && (
+                  <div className="space-y-2">
+                    {cfSessions.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-gray-500">Nog geen sessies gespeeld</p>
+                    ) : (
+                      <>
+                        {/* Summary */}
+                        {(() => {
+                          const myTotal = cfSessions.reduce((sum, s) => sum + (s.scores[user.name] || 0), 0);
+                          const myWins = cfSessions.filter((s) => {
+                            const max = Math.max(...Object.values(s.scores));
+                            const winners = Object.entries(s.scores).filter(([, v]) => v === max);
+                            return winners.length === 1 && winners[0][0] === user.name;
+                          }).length;
+                          return (
+                            <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
+                              <p className="text-sm text-gray-400">Jouw totaal: <span className="font-bold text-red-400">{myTotal} punten</span> · <span className="font-bold text-amber-400">{myWins} wins</span> uit {cfSessions.length} sessies</p>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Sessions */}
+                        {[...cfSessions].reverse().map((session, idx) => {
+                          const scores = session.scores || {};
+                          const maxPts = Math.max(...Object.values(scores), 0);
+                          const winners = Object.entries(scores).filter(([, v]) => v === maxPts && maxPts > 0);
+                          const winner = winners.length === 1 ? winners[0][0] : null;
+                          return (
+                            <div key={session.id} className="rounded-xl border border-slate-700/40 bg-slate-800/40 px-3 py-2">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[10px] font-bold text-gray-500">Dag {session.day} · Sessie {cfSessions.length - idx}</span>
+                                {winner && <span className="text-[10px] text-amber-400">🏆 {winner}</span>}
+                              </div>
+                              <div className="flex gap-2">
+                                {Object.entries(scores).sort(([, a], [, b]) => b - a).map(([name, pts]) => (
+                                  <div
+                                    key={name}
+                                    className={`flex-1 rounded-lg px-2 py-1.5 text-center ${
+                                      name === user.name
+                                        ? "bg-red-500/15 ring-1 ring-red-500/40"
+                                        : winner === name ? "bg-amber-500/10" : "bg-slate-700/30"
+                                    }`}
+                                  >
+                                    <p className={`text-[10px] truncate ${name === user.name ? "text-red-300 font-bold" : "text-gray-500"}`}>{name}</p>
+                                    <p className={`text-sm font-bold ${name === user.name ? "text-red-400" : winner === name ? "text-amber-400" : "text-gray-300"}`}>{pts}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
                 )}
 
                 {/* Approvals tab (Anton only) */}
