@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../actions";
 import { createClient } from "@/lib/supabase-server";
-import { getTable } from "@/lib/tables";
+import { getTable, isTestMode } from "@/lib/tables";
 import { Assignment, PendingConfirmation } from "@/lib/types";
 import { getCurrentDay, GAME_DATES } from "@/lib/game";
 import DashboardClient from "./DashboardClient";
@@ -123,6 +123,24 @@ export default async function DashboardPage() {
     });
   }
 
+  // Challenge count per category (Anton-only) for admin monitoring
+  let challengeCounts: { name: string; count: number }[] | undefined;
+  if (user.name === "Anton") {
+    const { data: allChallenges } = await supabase
+      .from(getTable("challenges"))
+      .select("category_id, categories(name)");
+    if (allChallenges) {
+      const countMap: Record<string, { name: string; count: number }> = {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      allChallenges.forEach((c: any) => {
+        const catName = c.categories?.name || "Unknown";
+        if (!countMap[catName]) countMap[catName] = { name: catName, count: 0 };
+        countMap[catName].count++;
+      });
+      challengeCounts = Object.values(countMap);
+    }
+  }
+
   return (
     <DashboardClient
       user={user}
@@ -137,6 +155,7 @@ export default async function DashboardPage() {
       endStats={endStats}
       podiumPlayers={podiumPlayers}
       cfPodiumPlayers={cfPodiumPlayers}
+      challengeCounts={challengeCounts}
     />
   );
 }

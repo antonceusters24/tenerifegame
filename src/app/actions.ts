@@ -307,21 +307,54 @@ export async function requestNewChallenge(day: number) {
 
   const usedIds = (allAssigned || []).map((a) => a.challenge_id);
 
-  // Get category distribution for today (all players)
+  // Get this player's full assignment history (all days) for category balance
+  const { data: myHistory } = await supabase
+    .from(assignmentsTable)
+    .select(`challenge_id, day, ${challengesTable}(category_id)`)
+    .eq("user_id", user.id);
+
+  // Count per category for this player across all days
+  const myCategories: Record<string, number> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (myHistory || []).forEach((a: any) => {
+    const nested = a[challengesTable] || a.challenges;
+    const catId = nested?.category_id;
+    if (catId) myCategories[catId] = (myCategories[catId] || 0) + 1;
+  });
+  const myTotal = Object.values(myCategories).reduce((s, n) => s + n, 0) || 0;
+
+  // Get this player's today assignments (for same-day check)
+  const myTodayCats: string[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (myHistory || []).filter((a: any) => a.day === day).forEach((a: any) => {
+    const nested = a[challengesTable] || a.challenges;
+    if (nested?.category_id) myTodayCats.push(nested.category_id);
+  });
+
+  // Get this player's yesterday assignments (for streak prevention)
+  const myYesterdayCats: string[] = [];
+  if (day > 1) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (myHistory || []).filter((a: any) => a.day === day - 1).forEach((a: any) => {
+      const nested = a[challengesTable] || a.challenges;
+      if (nested?.category_id) myYesterdayCats.push(nested.category_id);
+    });
+  }
+
+  // Get global category distribution for today (all players)
   const { data: todayAssignments } = await supabase
     .from(assignmentsTable)
     .select(`challenge_id, ${challengesTable}(category_id)`)
     .eq("day", day);
 
-  const categoryCounts: Record<string, number> = {};
+  const globalTodayCounts: Record<string, number> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (todayAssignments || []).forEach((a: any) => {
     const nested = a[challengesTable] || a.challenges;
     const catId = nested?.category_id;
-    if (catId) {
-      categoryCounts[catId] = (categoryCounts[catId] || 0) + 1;
-    }
+    if (catId) globalTodayCounts[catId] = (globalTodayCounts[catId] || 0) + 1;
   });
+  const globalTodayTotal = Object.values(globalTodayCounts).reduce((s, n) => s + n, 0) || 0;
 
   // Get available challenges (not assigned to ANY player)
   let query = supabase.from(challengesTable).select("id, category_id, requires_target");
@@ -334,17 +367,70 @@ export async function requestNewChallenge(day: number) {
     return { error: "No more challenges available!" };
   }
 
-  // Prefer categories with fewer than 2 players today
-  const preferred = available.filter(
-    (c) => (categoryCounts[c.category_id] || 0) < 2
-  );
+  // --- WEIGHTED CATEGORY SELECTION ---
+  // Collect all unique category IDs from available challenges
+  const categoryIds = [...new Set(available.map((c) => c.category_id))];
 
-  const pool = preferred.length > 0 ? preferred : available;
-  const random = pool[Math.floor(Math.random() * pool.length)];
+  // Compute weight for each category
+  const categoryWeights: Record<string, number> = {};
+  for (const catId of categoryIds) {
+    let weight = 1.0;
+
+    // 1. Rubber-band: pull toward 50/50 based on player's history
+    if (myTotal > 0) {
+      const myShare = (myCategories[catId] || 0) / myTotal;
+      const targetShare = 1 / categoryIds.length; // 0.5 for 2 categories
+      // If player has too many of this category, weight goes down
+      weight = Math.max(0.2, 1 + (targetShare - myShare) * 3);
+    }
+
+    // 2. Yesterday streak prevention: if player got 2 of this category yesterday, reduce weight
+    const yesterdaySameCount = myYesterdayCats.filter((c) => c === catId).length;
+    if (yesterdaySameCount >= 2) {
+      weight *= 0.4; // Significantly reduce chance of same category after yesterday's streak
+    }
+
+    // 3. Same-day tolerance (~30%): if player already has this category today, reduce weight
+    const todaySameCount = myTodayCats.filter((c) => c === catId).length;
+    if (todaySameCount > 0) {
+      weight *= 0.3; // ~30% chance of same category twice in a day
+    }
+
+    // 4. Global daily balance: boost underrepresented category across all players today
+    if (globalTodayTotal > 0) {
+      const globalShare = (globalTodayCounts[catId] || 0) / globalTodayTotal;
+      const targetGlobalShare = 1 / categoryIds.length;
+      if (globalShare > targetGlobalShare) {
+        weight *= 0.8; // Slightly reduce overrepresented category globally
+      } else {
+        weight *= 1.3; // Boost underrepresented category globally
+      }
+    }
+
+    categoryWeights[catId] = weight;
+  }
+
+  // Assign weight to each available challenge based on its category
+  const weighted = available.map((c) => ({
+    ...c,
+    weight: categoryWeights[c.category_id] || 1,
+  }));
+
+  // Weighted random selection
+  const totalWeight = weighted.reduce((sum, c) => sum + c.weight, 0);
+  let rand = Math.random() * totalWeight;
+  let selected = weighted[0];
+  for (const c of weighted) {
+    rand -= c.weight;
+    if (rand <= 0) {
+      selected = c;
+      break;
+    }
+  }
 
   // If challenge requires a target, pick a random other player
   let targetPlayerName: string | null = null;
-  if (random.requires_target) {
+  if (selected.requires_target) {
     const PLAYERS = ["Lander", "Berten", "Dries", "Anton"];
     const otherPlayers = PLAYERS.filter((p) => p !== user.name);
     targetPlayerName = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
@@ -352,7 +438,7 @@ export async function requestNewChallenge(day: number) {
 
   const { error } = await supabase.from(assignmentsTable).insert({
     user_id: user.id,
-    challenge_id: random.id,
+    challenge_id: selected.id,
     day,
     target_player_name: targetPlayerName,
   });

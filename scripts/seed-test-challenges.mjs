@@ -1,5 +1,6 @@
 // Run with: node scripts/seed-test-challenges.mjs
-// Inserts test challenges into challenges_test table for the preview environment.
+// Resets and re-seeds challenges_test + assignments_test for testing the balanced assignment algorithm.
+// Creates 24 Gotcha + 24 Doe opdracht = 48 test challenges.
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -9,17 +10,24 @@ const SUPABASE_ANON_KEY =
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Fetch categories
-const { data: cats, error: catErr } = await supabase
-  .from("categories")
-  .select("id, name");
+// --- CLEANUP ---
+console.log("🧹 Cleaning up assignments_test...");
+const { error: delAssign } = await supabase.from("assignments_test").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+if (delAssign) console.warn("  ⚠️ assignments_test cleanup:", delAssign.message);
+else console.log("  ✅ assignments_test cleared");
 
+console.log("🧹 Cleaning up challenges_test...");
+const { error: delChal } = await supabase.from("challenges_test").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+if (delChal) console.warn("  ⚠️ challenges_test cleanup:", delChal.message);
+else console.log("  ✅ challenges_test cleared");
+
+// --- FETCH CATEGORIES ---
+const { data: cats, error: catErr } = await supabase.from("categories").select("id, name");
 if (catErr || !cats?.length) {
   console.error("Could not fetch categories:", catErr?.message);
   process.exit(1);
 }
-
-console.log("Found categories:", cats.map((c) => `${c.name} (${c.id})`).join(", "));
+console.log("\nFound categories:", cats.map((c) => `${c.name} (${c.id})`).join(", "));
 
 function cat(name) {
   const found = cats.find((c) => c.name.toLowerCase().includes(name.toLowerCase()));
@@ -27,49 +35,100 @@ function cat(name) {
   return found.id;
 }
 
-const challenges = [
-  // Gotcha challenges (requires_target: true)
-  { title: "Zwembad", description: 'Laat de persoon die wordt aangewezen dit woord zeggen. Als dit lukt, roep je "Gotchaaa" en krijgt ge uw punten.', difficulty: "easy", points: 5, category: "Gotcha", requires_target: true, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Paella", description: 'Laat de persoon die wordt aangewezen dit woord zeggen. Als dit lukt, roep je "Gotchaaa" en krijgt ge uw punten.', difficulty: "easy", points: 5, category: "Gotcha", requires_target: true, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Kokosnoot", description: 'Laat de persoon die wordt aangewezen dit woord zeggen. Als dit lukt, roep je "Gotchaaa" en krijgt ge uw punten.', difficulty: "medium", points: 10, category: "Gotcha", requires_target: true, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Zonnebrand", description: 'Laat de persoon die wordt aangewezen dit woord zeggen. Als dit lukt, roep je "Gotchaaa" en krijgt ge uw punten.', difficulty: "medium", points: 10, category: "Gotcha", requires_target: true, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Vliegtuig", description: 'Laat de persoon die wordt aangewezen dit woord zeggen. Als dit lukt, roep je "Gotchaaa" en krijgt ge uw punten.', difficulty: "hard", points: 20, category: "Gotcha", requires_target: true, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Snorkel", description: 'Laat de persoon die wordt aangewezen dit woord zeggen. Als dit lukt, roep je "Gotchaaa" en krijgt ge uw punten.', difficulty: "easy", points: 5, category: "Gotcha", requires_target: true, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-
-  // Doe opdracht challenges
-  { title: "Dansje op de bar", description: "Doe een dansje op de bar van minstens 15 seconden. Video bewijs vereist.", difficulty: "hard", points: 20, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: "Doe het langer dan 30 seconden", bonus_points: 10 },
-  { title: "Compliment aan stranger", description: "Geef een compliment in het Spaans aan een willekeurige vreemde. Laat iemand filmen.", difficulty: "easy", points: 5, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Zwemmen om middernacht", description: "Spring in het zwembad na middernacht. Getuigen vereist.", difficulty: "medium", points: 10, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: "Doe het in uw kleren", bonus_points: 5 },
-  { title: "Eet iets raars", description: "Bestel iets op het menu dat ge normaal nooit zou eten en eet het volledig op.", difficulty: "medium", points: 10, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Selfie met politie", description: "Maak een selfie met een lokale politieagent.", difficulty: "hard", points: 20, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: "Laat de agent ook een duimpje omhoog doen", bonus_points: 10 },
-  { title: "Strandloper", description: "Loop 500m op het strand op blote voeten en kom terug. Iemand timed u.", difficulty: "easy", points: 5, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Cocktail shaken", description: "Vraag aan de barman of ge zelf uw cocktail moogt shaken.", difficulty: "medium", points: 10, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: "Drink hem in één keer op", bonus_points: 5 },
-  { title: "Karaoke duet", description: "Zing een duet met een random persoon in een bar.", difficulty: "hard", points: 20, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Ijskoud water", description: "Drink een glas ijskoud water in minder dan 5 seconden zonder te stoppen.", difficulty: "easy", points: 5, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: null, bonus_points: 0 },
-  { title: "Pushups challenge", description: "Doe 20 pushups op het strand of aan het zwembad. Getuigen vereist.", difficulty: "medium", points: 10, category: "Doe opdracht", requires_target: false, created_by_admin: "Test", bonus_description: "Doe er 40", bonus_points: 10 },
+// --- GENERATE 24 GOTCHA + 24 DOE CHALLENGES ---
+const GOTCHA_WORDS = [
+  "Zwembad", "Paella", "Kokosnoot", "Zonnebrand", "Vliegtuig", "Snorkel",
+  "Sangria", "Vulkaan", "Papegaai", "Banaan", "Flipflop", "Handdoek",
+  "Ananas", "Jetski", "Surfplank", "Cocktail", "Palmboom", "Dolfijn",
+  "Bikini", "Zonsondergang", "Kameleon", "Hagedis", "Cactus", "Woestijn",
 ];
 
-const rows = challenges.map((c) => ({
-  title: c.title,
-  description: c.description,
-  difficulty: c.difficulty,
-  points: c.points,
-  category_id: cat(c.category),
-  requires_target: c.requires_target,
-  created_by_admin: c.created_by_admin,
-  bonus_description: c.bonus_description,
-  bonus_points: c.bonus_points,
-}));
+const DOE_TITLES = [
+  "Dansje op de bar", "Compliment aan stranger", "Zwemmen om middernacht",
+  "Eet iets raars", "Selfie met politie", "Strandloper",
+  "Cocktail shaken", "Karaoke duet", "Ijskoud water", "Pushups challenge",
+  "Zonnecrème aanbieden", "Spaans bestellen", "Foto met local",
+  "Strandsprint", "Duik van de rots", "Arm wrestle challenge",
+  "Shot roulette", "Bar trick", "Vreemde begroeting", "Limbo challenge",
+  "Bierkapje", "Cocktail naam verzinnen", "Toerist spelen", "Dansen met stranger",
+];
 
-const { data, error } = await supabase
-  .from("challenges_test")
-  .insert(rows)
-  .select("id, title");
+const DOE_DESCRIPTIONS = [
+  "Doe een dansje op de bar van minstens 15 seconden.",
+  "Geef een compliment in het Spaans aan een willekeurige vreemde.",
+  "Spring in het zwembad na middernacht. Getuigen vereist.",
+  "Bestel iets op het menu dat ge normaal nooit zou eten.",
+  "Maak een selfie met een lokale politieagent.",
+  "Loop 500m op het strand op blote voeten.",
+  "Vraag aan de barman of ge zelf uw cocktail moogt shaken.",
+  "Zing een duet met een random persoon in een bar.",
+  "Drink een glas ijskoud water in minder dan 5 seconden.",
+  "Doe 20 pushups op het strand of aan het zwembad.",
+  "Bied zonnecrème aan bij een willekeurige toerist.",
+  "Bestel uw volgende drankje volledig in het Spaans.",
+  "Maak een foto met een local en post het in de groep.",
+  "Sprint 100m over het strand. Iemand timed u.",
+  "Spring van een rots (veilige hoogte!) in het water.",
+  "Daag een random persoon uit voor arm wrestle.",
+  "Doe een shot roulette met minstens 3 opties.",
+  "Leer een bar trick en voer hem uit voor de groep.",
+  "Begroet 5 vreemden op een rare manier.",
+  "Organiseer een limbo met random mensen.",
+  "Open een biertje met iets dat geen flesopener is.",
+  "Verzin een cocktailnaam en laat de barman hem maken.",
+  "Gedraag u 10 minuten als de ultieme toerist.",
+  "Vraag een stranger om te dansen en dans minstens 30 sec.",
+];
+
+const DIFFICULTIES = ["easy", "medium", "hard"];
+const POINTS = { easy: 5, medium: 10, hard: 20 };
+
+const challenges = [];
+
+// 24 Gotcha challenges
+for (let i = 0; i < 24; i++) {
+  const diff = DIFFICULTIES[i % 3];
+  challenges.push({
+    title: GOTCHA_WORDS[i],
+    description: `Laat de persoon die wordt aangewezen het woord "${GOTCHA_WORDS[i]}" zeggen. Als dit lukt, roep je "Gotchaaa!" en krijgt ge uw punten.`,
+    difficulty: diff,
+    points: POINTS[diff],
+    category_id: cat("Gotcha"),
+    requires_target: true,
+    created_by_admin: "Test",
+    bonus_description: i % 4 === 0 ? "Laat het woord 3x zeggen in 1 gesprek" : null,
+    bonus_points: i % 4 === 0 ? 5 : 0,
+  });
+}
+
+// 24 Doe opdracht challenges
+for (let i = 0; i < 24; i++) {
+  const diff = DIFFICULTIES[i % 3];
+  challenges.push({
+    title: DOE_TITLES[i],
+    description: DOE_DESCRIPTIONS[i],
+    difficulty: diff,
+    points: POINTS[diff],
+    category_id: cat("Doe"),
+    requires_target: false,
+    created_by_admin: "Test",
+    bonus_description: i % 3 === 0 ? "Doe het met meer inzet dan verwacht" : null,
+    bonus_points: i % 3 === 0 ? 5 : 0,
+  });
+}
+
+// --- INSERT ---
+const { data, error } = await supabase.from("challenges_test").insert(challenges).select("id, title, category_id");
 
 if (error) {
-  console.error("Insert failed:", error.message);
+  console.error("\n❌ Insert failed:", error.message);
   process.exit(1);
 }
 
+const gotchaCount = data.filter((c) => c.category_id === cat("Gotcha")).length;
+const doeCount = data.filter((c) => c.category_id === cat("Doe")).length;
+
 console.log(`\n✅ Inserted ${data.length} test challenges:`);
-data.forEach((c) => console.log(`  - ${c.title} (${c.id})`));
+console.log(`   Gotcha: ${gotchaCount}`);
+console.log(`   Doe opdracht: ${doeCount}`);
+console.log("\nReady to test the assignment algorithm!");

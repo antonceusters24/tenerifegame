@@ -375,6 +375,7 @@ export default function DashboardClient({
   endStats,
   podiumPlayers,
   cfPodiumPlayers,
+  challengeCounts,
 }: {
   user: User;
   assignments: Assignment[];
@@ -384,6 +385,7 @@ export default function DashboardClient({
   endStats?: { challengeRank: number; cfRank: number; totalPlayers: number };
   podiumPlayers?: PodiumPlayer[];
   cfPodiumPlayers?: PodiumPlayer[];
+  challengeCounts?: { name: string; count: number }[];
 }) {
   const [assignments, setAssignments] = useState(initial);
   const [pending, setPending] = useState(initialPending);
@@ -790,12 +792,24 @@ export default function DashboardClient({
                 ))}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* After game */}
-        {gameStatus === "after" && (
-          <EndScreen user={user} endStats={endStats} podiumPlayers={podiumPlayers} cfPodiumPlayers={cfPodiumPlayers} />
+            {/* Challenge counts (test-only, Anton-only) */}
+            {challengeCounts && (
+              <div className="w-full rounded-xl border border-slate-700/40 bg-slate-800/40 px-3 py-2">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1">🧪 Challenges in DB</p>
+                <div className="flex items-center gap-3">
+                  {challengeCounts.map((c) => (
+                    <span key={c.name} className="text-[11px] text-gray-300">
+                      {c.name}: <span className="font-bold text-amber-400">{c.count}</span>
+                    </span>
+                  ))}
+                  <span className="text-[11px] text-gray-500 ml-auto">
+                    Σ {challengeCounts.reduce((sum, c) => sum + c.count, 0)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Day 1 welcome — rendered as overlay below */}
