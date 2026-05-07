@@ -387,26 +387,24 @@ export async function requestNewChallenge(day: number) {
       weight = Math.max(0.2, 1 + (targetShare - myShare) * 3);
     }
 
-    // 2. Yesterday streak prevention: if player got 2 of this category yesterday, reduce weight
+    // 2. Yesterday streak prevention: only if player got 2 of same yesterday
     const yesterdaySameCount = myYesterdayCats.filter((c) => c === catId).length;
     if (yesterdaySameCount >= 2) {
-      weight *= 0.4; // Significantly reduce chance of same category after yesterday's streak
+      weight *= 0.6; // Moderate reduction, not a hard block
     }
 
-    // 3. Same-day tolerance (~30%): if player already has this category today, reduce weight
+    // 3. Same-day: slight nudge toward variety, but same category twice is totally fine
     const todaySameCount = myTodayCats.filter((c) => c === catId).length;
     if (todaySameCount > 0) {
-      weight *= 0.3; // ~30% chance of same category twice in a day
+      weight *= 0.7; // Mild preference for the other category, not strict
     }
 
-    // 4. Global daily balance: boost underrepresented category across all players today
-    if (globalTodayTotal > 0) {
+    // 4. Global daily balance: very subtle nudge, not strict
+    if (globalTodayTotal > 2) {
       const globalShare = (globalTodayCounts[catId] || 0) / globalTodayTotal;
       const targetGlobalShare = 1 / categoryIds.length;
-      if (globalShare > targetGlobalShare) {
-        weight *= 0.8; // Slightly reduce overrepresented category globally
-      } else {
-        weight *= 1.3; // Boost underrepresented category globally
+      if (globalShare > targetGlobalShare + 0.2) {
+        weight *= 0.9; // Only nudge when heavily skewed
       }
     }
 
