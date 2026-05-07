@@ -32,16 +32,24 @@ export default function PullToRefresh() {
       if (dy > 0 && window.scrollY === 0) {
         setPulling(true);
         setPullDistance(Math.min(dy * 0.5, THRESHOLD + 20));
+        // Move page content down
+        document.body.style.transform = `translateY(${Math.min(dy * 0.5, THRESHOLD + 20)}px)`;
+        document.body.style.transition = "none";
         if (dy > 10) e.preventDefault();
       } else {
         setPulling(false);
         setPullDistance(0);
+        document.body.style.transform = "";
       }
     };
 
     const handleTouchEnd = () => {
       if (pullDistance >= THRESHOLD) {
         window.location.reload();
+      } else {
+        // Snap back with animation
+        document.body.style.transition = "transform 0.3s ease";
+        document.body.style.transform = "";
       }
       isPulling.current = false;
       setPulling(false);
@@ -65,7 +73,7 @@ export default function PullToRefresh() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center transition-transform"
+      className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center"
       style={{ transform: `translateY(${pullDistance - 40}px)` }}
     >
       <div
