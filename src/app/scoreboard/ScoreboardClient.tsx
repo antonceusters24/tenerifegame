@@ -231,9 +231,16 @@ export default function ScoreboardClient({
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
-                            <p className={`text-3xl font-black tabular-nums ${entry.total_points < 0 ? "text-red-400" : "text-amber-400"}`}>
-                              {entry.total_points}
-                            </p>
+                            <div className="text-right">
+                              <p className={`text-3xl font-black tabular-nums ${entry.total_points < 0 ? "text-red-400" : "text-amber-400"}`}>
+                                {entry.total_points}
+                              </p>
+                              {isExpanded && (entry.earned_points > 0 || entry.bonus_earned > 0 || entry.penalty_points < 0) && (
+                                <p className="text-[9px] text-gray-500">
+                                  {[entry.earned_points > 0 && `${entry.earned_points}pts`, entry.bonus_earned > 0 && `${entry.bonus_earned} bonus`, entry.penalty_points < 0 && `${entry.penalty_points}`].filter(Boolean).join(", ")}
+                                </p>
+                              )}
+                            </div>
                             <span className="text-[10px] text-gray-600">{isExpanded ? "▲" : "▼"}</span>
                           </div>
                         </div>
@@ -241,11 +248,6 @@ export default function ScoreboardClient({
 
                       {isExpanded && (
                         <div className="rounded-b-2xl border border-t-0 border-slate-700/60 bg-slate-800/50 p-3 space-y-2">
-                          <div className="flex flex-wrap gap-2 text-[10px] font-bold">
-                            {entry.earned_points > 0 && <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-400">+{entry.earned_points} punten</span>}
-                            {entry.bonus_earned > 0 && <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-yellow-400">+{entry.bonus_earned} bonus</span>}
-                            {entry.penalty_points < 0 && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">{entry.penalty_points} penalty</span>}
-                          </div>
                           {activeOnes.length > 0 && (
                             <div>
                               <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-amber-400">Actieve challenge</p>

@@ -47,8 +47,8 @@ export default function EasterEggs() {
     // Only show easter eggs during active game (not countdown or end screen)
     if (gameStatus !== "active") return;
 
-    // 50% chance to show an easter egg on mount
-    if (Math.random() < 0.5) {
+    // 20% chance to show an easter egg on mount
+    if (Math.random() < 0.2) {
       const randomEgg = EASTER_EGGS[Math.floor(Math.random() * EASTER_EGGS.length)];
       setEgg(randomEgg);
       setPosition({
