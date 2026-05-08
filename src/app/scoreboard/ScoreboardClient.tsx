@@ -324,11 +324,20 @@ export default function ScoreboardClient({
               const totalExpired = entries.reduce((s, e) => s + (e.expired_count || 0), 0);
               const totalBonus = entries.reduce((s, e) => s + e.bonus_earned, 0);
               const totalPoints = entries.reduce((s, e) => s + e.total_points, 0);
+              const totalChallenges = totalCompleted + totalSkipped + totalExpired;
+
+              // No challenges yet — show empty state
+              if (totalChallenges === 0) {
+                return (
+                  <div className="text-center text-sm text-gray-500 py-8">
+                    <p>Nog geen challenges gedaan</p>
+                  </div>
+                );
+              }
+
               const leader = entries[0];
               const loser = entries[entries.length - 1];
-              const mostCompleted = [...entries].sort((a, b) => b.completed_count - a.completed_count)[0];
               const mostSkipped = [...entries].sort((a, b) => b.skipped_count - a.skipped_count)[0];
-              const mostBonus = [...entries].sort((a, b) => b.bonus_earned - a.bonus_earned)[0];
               // Completion rate per player
               const playerRates = entries.map((e) => {
                 const total = e.completed_count + e.skipped_count + (e.expired_count || 0);
@@ -409,7 +418,7 @@ export default function ScoreboardClient({
                     <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-amber-400/70">📊 Overzicht</p>
 
                     {/* Hero — Leader vs Last */}
-                    {entries.length >= 2 && (
+                    {entries.length >= 2 && leader.total_points !== loser.total_points && (
                       <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-4 mb-4">
                         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-transparent to-red-500/5" />
                         <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-4">
@@ -441,20 +450,32 @@ export default function ScoreboardClient({
                       </div>
                     )}
 
-                    {/* Quick numbers */}
+                    {/* Quick numbers — only show non-zero */}
                     <div className="grid grid-cols-4 gap-2 text-center">
+                      {totalCompleted > 0 && (
                       <div className="rounded-xl bg-slate-800/60 border border-slate-700/30 p-2.5">
                         <p className="text-lg font-black text-emerald-400">{totalCompleted}</p>
                         <p className="text-[9px] text-gray-500 font-medium">gedaan</p>
                       </div>
+                      )}
+                      {totalExpired > 0 && (
+                      <div className="rounded-xl bg-slate-800/60 border border-slate-700/30 p-2.5">
+                        <p className="text-lg font-black text-orange-400">{totalExpired}</p>
+                        <p className="text-[9px] text-gray-500 font-medium">verlopen</p>
+                      </div>
+                      )}
+                      {totalSkipped > 0 && (
                       <div className="rounded-xl bg-slate-800/60 border border-slate-700/30 p-2.5">
                         <p className="text-lg font-black text-red-400">{totalSkipped}</p>
                         <p className="text-[9px] text-gray-500 font-medium">geskipt</p>
                       </div>
+                      )}
+                      {totalBonus > 0 && (
                       <div className="rounded-xl bg-slate-800/60 border border-slate-700/30 p-2.5">
                         <p className="text-lg font-black text-yellow-400">{totalBonus}</p>
                         <p className="text-[9px] text-gray-500 font-medium">bonus</p>
                       </div>
+                      )}
                       <div className="rounded-xl bg-slate-800/60 border border-slate-700/30 p-2.5">
                         <p className="text-lg font-black text-amber-400">{totalPoints}</p>
                         <p className="text-[9px] text-gray-500 font-medium">totaal</p>
@@ -462,11 +483,13 @@ export default function ScoreboardClient({
                     </div>
                   </div>
 
-                  {/* === SECTION: PRESTATIES === */}
+                  {/* === SECTION: PRESTATIES — only when at least 1 completed === */}
+                  {totalCompleted > 0 && (
                   <div>
                     <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-amber-400/70">🏅 Prestaties</p>
 
                     {/* Completion rate bars */}
+                    {playerRates.some((pr) => pr.total > 0) && (
                     <div className="rounded-2xl border border-slate-700/40 bg-slate-800/40 p-4 space-y-3 mb-4">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Completion Rate</p>
                       {playerRates.map((pr) => {
@@ -490,6 +513,7 @@ export default function ScoreboardClient({
                         );
                       })}
                     </div>
+                    )}
 
                     {/* Hard Challenge King */}
                     {hardKing.hard > 0 && (
@@ -534,8 +558,10 @@ export default function ScoreboardClient({
                       </div>
                     )}
                   </div>
+                  )}
 
-                  {/* === SECTION: BREAKDOWN === */}
+                  {/* === SECTION: BREAKDOWN — only when challenges exist === */}
+                  {totalCompleted > 0 && (
                   <div>
                     <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-amber-400/70">📋 Breakdown</p>
 
@@ -598,8 +624,10 @@ export default function ScoreboardClient({
                       )}
                     </div>
                   </div>
+                  )}
 
-                  {/* === SECTION: WEETJES === */}
+                  {/* === SECTION: WEETJES — only when meaningful data === */}
+                  {totalCompleted > 0 && (
                   <div>
                     <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-amber-400/70">💬 Weetjes</p>
                     <div className="rounded-2xl border border-slate-700/40 bg-slate-800/40 p-4 space-y-2.5">
@@ -630,6 +658,7 @@ export default function ScoreboardClient({
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
               );
             })()}
@@ -976,7 +1005,7 @@ export default function ScoreboardClient({
 
                   {/* Sessions list */}
                   {cfSessions.length === 0 && (
-                    <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-8 text-center text-gray-400">
+                    <div className="text-center text-sm text-gray-500 py-8">
                       Nog geen sessies gespeeld
                     </div>
                   )}

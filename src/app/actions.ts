@@ -353,7 +353,7 @@ export async function requestNewChallenge(day: number) {
     },
   ]);
 
-  if (error) return { error: "Failed to assign challenges" };
+  if (error) return { error: `Failed to assign challenges: ${error.message}` };
   return { success: true };
 }
 

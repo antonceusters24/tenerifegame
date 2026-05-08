@@ -484,6 +484,7 @@ export default function DashboardClient({
     setLoading("new");
     const result = await requestNewChallenge(day);
     if (result && "error" in result) {
+      alert(result.error);
       setLoading(null);
       return;
     }
@@ -827,6 +828,11 @@ export default function DashboardClient({
               </div>
             )}
           </div>
+        )}
+
+        {/* Game ended */}
+        {gameStatus === "after" && (
+          <EndScreen user={user} endStats={endStats} podiumPlayers={podiumPlayers} cfPodiumPlayers={cfPodiumPlayers} />
         )}
 
         {/* Day 1 welcome — rendered as overlay below */}
@@ -1195,7 +1201,7 @@ export default function DashboardClient({
                     disabled={loading === "new"}
                     className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 text-base font-extrabold text-black shadow-lg shadow-amber-500/30 transition hover:from-amber-400 hover:to-orange-400 active:scale-95 disabled:opacity-50"
                   >
-                    {loading === "new" ? "Laden..." : "🎲 Trek je challenges"}
+                    {loading === "new" ? "Laden..." : "Trek nieuwe challenges voor vandaag"}
                   </button>
                 )}
               </div>
@@ -1502,7 +1508,7 @@ export default function DashboardClient({
             <h2 className="text-2xl font-black text-white">Dag vrienden! Binnen enkele uurtjes arriveren we in Guido&apos;s fokhok!</h2>
             <p className="mt-2 text-sm font-medium text-gray-300">Let the games begin</p>
             <div className="mt-4 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-400">
-              ⏳ Vanaf morgen 11u begint het voor echt...
+              ⏳ Vanaf morgen 9u begint het voor echt...
             </div>
             <button
               onClick={() => setShowWelcomeOverlay(false)}

@@ -13,13 +13,13 @@ const PROD_GAME_DATES = [
 
 const PROD_TRIP_START = "2026-05-12";
 const PROD_ACTIVATION_TIME = "2026-05-12T16:00:00Z"; // 18:00 Belgian time (1h before flight)
-const PROD_CHALLENGES_START = "2026-05-13T10:00:00Z";
-const PROD_GAME_END = "2026-05-18T23:00:00Z";
+const PROD_CHALLENGES_START = "2026-05-13T08:00:00Z";
+const PROD_GAME_END = "2026-05-19T03:00:00Z"; // 4:00 AM Tenerife — last challenges expired
 
-// Test game dates (starting 2026-05-03, so today May 5 = Day 3)
+// Test game dates (starting 2026-05-01, so today May 8 = Day 8 = after game)
 function buildTestDates(): string[] {
   const dates: string[] = [];
-  const start = new Date("2026-05-03");
+  const start = new Date("2026-05-01");
   for (let i = 0; i < 7; i++) {
     const d = new Date(start);
     d.setDate(d.getDate() + i);

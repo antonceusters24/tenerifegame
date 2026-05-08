@@ -58,7 +58,7 @@ const ANIMATION_LABELS: Record<AnimationType, { label: string; button: string; a
   roulette:  { label: "Russian Roulette!",      button: "I can't breathe!",      activeButton: "Tik... tik... tik..." },
   magic8:    { label: "Schud de sneeuwbol!",  button: "Schuddeuh bolleuh pats!",  activeButton: "De bol schudt..." },
   lightning: { label: "Wie wordt er geraakt?",   button: "STRIKE!",     activeButton: "Laden..." },
-  eenymeeny: { label: "Ienemienemutte",          button: "Starteuh!",     activeButton: "Joehoeeee..." },
+  eenymeeny: { label: "ienemienemutte",          button: "Starteuh!",     activeButton: "Joehoeeee..." },
 };
 
 const EENY_MEENY_WORDS = [
@@ -896,7 +896,7 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
   return (
     <div className={`login-card relative z-10 w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-800/80 p-8 shadow-2xl backdrop-blur ${shaking ? "animate-shake" : ""}`}>
       <h1 className="mb-1 text-center text-3xl font-extrabold text-white">
-        <span className="inline-block cursor-pointer select-none" onClick={handleBeerTap}>🍺</span>{" "}
+        <span className={`inline-block select-none ${gameActive ? "cursor-pointer" : ""}`} onClick={gameActive ? handleBeerTap : undefined}>🍺</span>{" "}
         Tenerife 2026
       </h1>
       {gameActive && <p className="mb-6 text-center text-sm text-gray-400 italic">{subtitle}</p>}
@@ -982,6 +982,7 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
                   >
                     <option value="">Kiest uwe naam</option>
                     {PLAYERS.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+                    {ADMINS.map((a) => <option key={a.name} value={a.name}>{a.label}</option>)}
                   </select>
                 )}
               </>
@@ -1022,7 +1023,7 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
         )}
       </form>
 
-      {!showAdminLogin && (
+      {gameActive && !showAdminLogin && (
         <p className="mt-3 text-center text-[10px] text-slate-600 select-none">🍺 × {beerTaps}/5</p>
       )}
     </div>
