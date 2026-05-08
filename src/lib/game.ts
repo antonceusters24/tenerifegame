@@ -12,7 +12,7 @@ const PROD_GAME_DATES = [
 ];
 
 const PROD_TRIP_START = "2026-05-12";
-const PROD_ACTIVATION_TIME = "2026-05-12T22:00:00Z";
+const PROD_ACTIVATION_TIME = "2026-05-12T16:00:00Z"; // 18:00 Belgian time (1h before flight)
 const PROD_CHALLENGES_START = "2026-05-13T10:00:00Z";
 const PROD_GAME_END = "2026-05-18T23:00:00Z";
 
@@ -30,7 +30,7 @@ function buildTestDates(): string[] {
 
 const TEST_GAME_DATES = buildTestDates();
 const TEST_TRIP_START = TEST_GAME_DATES[0];
-const TEST_ACTIVATION_TIME = TEST_GAME_DATES[0] + "T00:00:00Z";
+const TEST_ACTIVATION_TIME = "2026-05-08T10:30:00Z";
 const TEST_CHALLENGES_START = TEST_GAME_DATES[1] + "T08:00:00Z"; // 9 AM Canary, same as prod
 const TEST_GAME_END = TEST_GAME_DATES[TEST_GAME_DATES.length - 1] + "T23:00:00Z";
 
@@ -41,10 +41,39 @@ export const ACTIVATION_TIME = isTestMode ? TEST_ACTIVATION_TIME : PROD_ACTIVATI
 const CHALLENGES_START = isTestMode ? TEST_CHALLENGES_START : PROD_CHALLENGES_START;
 const GAME_END = isTestMode ? TEST_GAME_END : PROD_GAME_END;
 
+// Challenge day resets at 4:00 AM Tenerife time (so nights out still count for that day)
+export const CHALLENGE_RESET_HOUR = 4;
+export const CHALLENGE_RESET_MINUTE = 0;
+
 export function getLocalDateString(): string {
+  // Returns the "game day" date string, accounting for reset time boundary
+  // Before reset time Tenerife = still counts as previous day
   const now = new Date();
   const tenerife = new Date(now.toLocaleString("en-US", { timeZone: "Atlantic/Canary" }));
+  const currentMinutes = tenerife.getHours() * 60 + tenerife.getMinutes();
+  const resetMinutes = CHALLENGE_RESET_HOUR * 60 + CHALLENGE_RESET_MINUTE;
+  if (currentMinutes < resetMinutes) {
+    tenerife.setDate(tenerife.getDate() - 1);
+  }
   return `${tenerife.getFullYear()}-${String(tenerife.getMonth() + 1).padStart(2, "0")}-${String(tenerife.getDate()).padStart(2, "0")}`;
+}
+
+export function getNextResetTime(): Date {
+  // Returns the next reset time in Tenerife as a Date object
+  const now = new Date();
+  const tenerife = new Date(now.toLocaleString("en-US", { timeZone: "Atlantic/Canary" }));
+  const currentMinutes = tenerife.getHours() * 60 + tenerife.getMinutes();
+  const resetMinutes = CHALLENGE_RESET_HOUR * 60 + CHALLENGE_RESET_MINUTE;
+  const target = new Date(tenerife);
+  if (currentMinutes < resetMinutes) {
+    target.setHours(CHALLENGE_RESET_HOUR, CHALLENGE_RESET_MINUTE, 0, 0);
+  } else {
+    target.setDate(target.getDate() + 1);
+    target.setHours(CHALLENGE_RESET_HOUR, CHALLENGE_RESET_MINUTE, 0, 0);
+  }
+  // Convert back: compute offset between tenerife representation and real now
+  const offsetMs = now.getTime() - tenerife.getTime();
+  return new Date(target.getTime() + offsetMs);
 }
 
 export function getCurrentDay(): number | null {

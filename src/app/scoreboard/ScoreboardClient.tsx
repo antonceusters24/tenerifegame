@@ -228,7 +228,7 @@ export default function ScoreboardClient({
                               {entry.name === user.name && <span className="text-xs font-normal text-gray-500">(gij)</span>}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {entry.completed_count} gedaan · {entry.skipped_count} geskipt{entry.expired_count > 0 && ` · ${entry.expired_count} te laaaaat`}
+                              {entry.completed_count} gedaan{entry.expired_count > 0 && ` · ${entry.expired_count} verlopen (-${entry.expired_count * 5}pts)`}{entry.skipped_count > 0 && ` · ${entry.skipped_count} geskipt`}
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getTable } from "@/lib/tables";
-import { GAME_DATES } from "@/lib/game";
+import { GAME_DATES, CHALLENGE_RESET_HOUR, CHALLENGE_RESET_MINUTE } from "@/lib/game";
 
 export async function GET(request: Request) {
   // Verify cron secret to prevent unauthorized calls
@@ -18,10 +18,17 @@ export async function GET(request: Request) {
   );
 
   // Get current date in Canary Islands timezone (Atlantic/Canary)
+  // Day boundary is at CHALLENGE_RESET_HOUR:CHALLENGE_RESET_MINUTE
   const now = new Date();
   const canaryDate = new Date(
     now.toLocaleString("en-US", { timeZone: "Atlantic/Canary" })
   );
+  // If before reset time, treat as previous day
+  const currentMinutes = canaryDate.getHours() * 60 + canaryDate.getMinutes();
+  const resetMinutes = CHALLENGE_RESET_HOUR * 60 + CHALLENGE_RESET_MINUTE;
+  if (currentMinutes < resetMinutes) {
+    canaryDate.setDate(canaryDate.getDate() - 1);
+  }
   const canaryDateStr = `${canaryDate.getFullYear()}-${String(canaryDate.getMonth() + 1).padStart(2, "0")}-${String(canaryDate.getDate()).padStart(2, "0")}`;
 
   // Find which days have passed (their date is before today in Canary time)

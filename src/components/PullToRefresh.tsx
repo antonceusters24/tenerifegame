@@ -11,13 +11,6 @@ export default function PullToRefresh() {
   const THRESHOLD = 80;
 
   useEffect(() => {
-    // Only activate in standalone mode (home screen app)
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window.navigator as any).standalone === true;
-
-    if (!isStandalone) return;
 
     const handleTouchStart = (e: TouchEvent) => {
       if (window.scrollY === 0) {

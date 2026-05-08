@@ -1,6 +1,8 @@
 ﻿"use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { createClient as createBrowserClient } from "@/lib/supabase-browser";
+import { getTable } from "@/lib/tables";
 import { User, Assignment, PendingConfirmation } from "@/lib/types";
 import {
   getGameStatus,
@@ -8,10 +10,10 @@ import {
   ACTIVATION_TIME,
   GAME_DATES,
   challengesAvailable,
+  getNextResetTime,
 } from "@/lib/game";
 import {
   completeChallenge,
-  skipChallenge,
   requestNewChallenge,
   confirmChallenge,
   rejectChallenge,
@@ -36,25 +38,25 @@ const DAY_NAMES = [
 function DayTracker({ day }: { day: number }) {
   const info = DAY_NAMES[day - 1] || DAY_NAMES[0];
   const progress = (day / 7) * 100;
-  const [collapsed, setCollapsed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-xl border border-amber-500/20 bg-slate-800/60 px-3 py-2">
-      <button onClick={() => setCollapsed((c) => !c)} className="w-full flex items-center justify-between">
-        <span className="text-[10px] font-medium text-gray-400">Dag {day}/7</span>
-        <span className="text-sm font-bold text-amber-400">{info.emoji} {info.name}</span>
-        <span className="text-[10px] text-gray-500">{collapsed ? "▼" : "▲"}</span>
+    <div>
+      <button onClick={() => setExpanded((e) => !e)} className="w-full flex items-center gap-2.5">
+        <div className="relative flex-1 h-5 overflow-hidden rounded-full bg-slate-700">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-white drop-shadow-md">
+            {day}/7
+          </span>
+        </div>
+        <span className="shrink-0 text-sm font-bold text-amber-400">{info.emoji} {info.name}</span>
+        <span className="text-xs text-gray-500">{expanded ? "▲" : "▼"}</span>
       </button>
-      {!collapsed && (
-        <>
-          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-700">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="mt-1 text-center text-[10px] italic text-gray-500">&ldquo;{info.subtitle}&rdquo;</p>
-        </>
+      {expanded && (
+        <p className="mt-1.5 text-center text-xs italic text-gray-400">&ldquo;{info.subtitle}&rdquo;</p>
       )}
     </div>
   );
@@ -394,8 +396,6 @@ export default function DashboardClient({
   const [players, setPlayers] = useState(initialPlayers);
   const [loading, setLoading] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showReveal, setShowReveal] = useState(false);
-  const [revealAnim, setRevealAnim] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [emojiInput, setEmojiInput] = useState(user.emoji || "");
@@ -403,10 +403,13 @@ export default function DashboardClient({
   const [viewingProfile, setViewingProfile] = useState<{ name: string; url: string } | null>(null);
   const [challengeCollapsed, setChallengeCollapsed] = useState(false);
   const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(true);
-  const [confirmAction, setConfirmAction] = useState<{ type: "complete" | "skip"; id: string; title: string; hasBonus?: boolean; bonusDesc?: string; bonusPoints?: number } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: "complete"; id: string; title: string; hasBonus?: boolean; bonusDesc?: string; bonusPoints?: number } | null>(null);
   const [bonusSelected, setBonusSelected] = useState(false);
   const [undoAction, setUndoAction] = useState<{ id: string; title: string } | null>(null);
   const [historyTab, setHistoryTab] = useState<"challenges" | "cf" | "approvals">("challenges");
+  const [challengeTab, setChallengeTab] = useState<"doe" | "gotcha">("doe");
+  const [showRevealAnim, setShowRevealAnim] = useState(false);
+  const [showRevealModal, setShowRevealModal] = useState(false);
   const [nextDayCountdown, setNextDayCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [recentlyConfirmed, setRecentlyConfirmed] = useState<PendingConfirmation[]>(initialRecentConfirmed || []);
   const [showMenu, setShowMenu] = useState(false);
@@ -432,18 +435,25 @@ export default function DashboardClient({
   }, []);
 
   useEffect(() => {
-    function updateMidnight() {
-      const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(24, 0, 0, 0);
-      const diff = Math.max(0, midnight.getTime() - now.getTime());
+    function updateReset() {
+      const resetTime = getNextResetTime();
+      const diff = Math.max(0, resetTime.getTime() - Date.now());
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       setNextDayCountdown({ hours, minutes, seconds });
+
+      // When countdown hits zero, expire active challenges client-side
+      if (diff === 0) {
+        setAssignments((prev) =>
+          prev.map((a) =>
+            a.status === "active" ? { ...a, status: "expired" as const } : a
+          )
+        );
+      }
     }
-    updateMidnight();
-    const interval = setInterval(updateMidnight, 1000);
+    updateReset();
+    const interval = setInterval(updateReset, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -469,35 +479,45 @@ export default function DashboardClient({
     setLoading(null);
   }
 
-  async function handleSkip(id: string) {
-    setLoading(id);
-    const res = await skipChallenge(id);
-    if (!("error" in res)) {
-      setAssignments((prev) =>
-        prev.map((a) =>
-          a.id === id ? { ...a, status: "skipped" as const } : a
-        )
-      );
-    }
-    setLoading(null);
-  }
-
   async function handleRequestNew() {
     const day = currentDay || 1;
     setLoading("new");
-    // Pick a random animation type
-    setRevealAnim(Math.floor(Math.random() * 10));
-    // Start the animation
-    setShowReveal(true);
-    // Request the challenge in the background
-    await requestNewChallenge(day);
+    const result = await requestNewChallenge(day);
+    if (result && "error" in result) {
+      setLoading(null);
+      return;
+    }
+    // Refetch assignments client-side so modal can show the new challenges
+    const sb = createBrowserClient();
+    const assignmentsTable = getTable("assignments");
+    const challengesTable = getTable("challenges");
+    const { data: freshAssignments } = await sb
+      .from(assignmentsTable)
+      .select(`*, ${challengesTable}(*, categories(*))`)
+      .eq("user_id", user.id)
+      .order("day", { ascending: true });
+    if (freshAssignments) {
+      // Normalize nested challenge key
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const normalized = freshAssignments.map((a: any) => {
+        const challenges = a.challenges || a.challenges_test || null;
+        return { ...a, challenges };
+      });
+      setAssignments(normalized);
+    }
+    setLoading(null);
+    // Show the drawing animation, then reveal modal after it finishes
+    setShowRevealAnim(true);
   }
 
-  const handleRevealComplete = useCallback(() => {
-    setShowReveal(false);
-    setLoading(null);
-    window.location.reload();
-  }, []);
+  function handleRevealAnimComplete() {
+    setShowRevealAnim(false);
+    setShowRevealModal(true);
+  }
+
+  function handleCloseReveal() {
+    setShowRevealModal(false);
+  }
 
   async function handleConfirm(id: string) {
     setLoading(id);
@@ -543,12 +563,6 @@ export default function DashboardClient({
     setLoading(null);
     setUndoAction(null);
   }
-
-  const difficultyColor = {
-    easy: "bg-emerald-900/50 text-emerald-300",
-    medium: "bg-amber-900/50 text-amber-300",
-    hard: "bg-red-900/50 text-red-300",
-  };
 
   const EMOJI_OPTIONS = ["🥚", "🐆", "🚬", "🍆", "🍺", "🔥", "💀", "🎯", "👑", "🦈", "🐒", "🌴", "🎲", "💣", "🧨", "🍻", "🥃", "🏖️", "☀️", "🤙", "😎", "🤯", "🫡", "💪"];
 
@@ -701,7 +715,7 @@ export default function DashboardClient({
 
           {/* Day tracker inside profile card */}
           {gameStatus === "active" && currentDay && (
-            <div className="mt-3 border-t border-slate-700/50 pt-3">
+            <div className="mt-2.5">
               <DayTracker day={currentDay} />
             </div>
           )}
@@ -759,7 +773,7 @@ export default function DashboardClient({
                   <p className="mt-0.5 text-[10px] text-gray-300 leading-relaxed">
                     Die stoeme vakbonden moeten zich altijd aanstellen he, vlucht gecanceld. 
                     We vliegen nu via Eindhoven (aankomst 22:55). 
-                    Maakt nie uit rekels, Guido&apos;s Fokhok wacht nog altijd op ons. 12 mei om 23:00 plaatselijke tijd zal de countdown die 0 hitten, vanaf dan meer informatie beschikbaar
+                    Maakt nie uit rekels, Guido&apos;s Fokhok wacht nog altijd op ons. Een dik uur voor dat we opstijgen, zal de countdown die 0 hitten, en volgt er meer informatie
                     <br />
                     <br />
                     Sending all the love, Guido & Anton
@@ -887,6 +901,7 @@ export default function DashboardClient({
                                 <div>
                                   <span className="text-xs text-emerald-300">Dag {a.day}</span>
                                   <p className="text-sm font-medium text-white">{a.challenges?.title}</p>
+                                  {a.challenges?.created_by_admin && <p className="text-[10px] text-gray-500">Bedacht door: {a.challenges.created_by_admin}</p>}
                                 </div>
                                 <div className="flex shrink-0 items-center gap-1 pt-0.5">
                                   <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-xs font-bold text-emerald-400">+{a.challenges?.points}pts</span>
@@ -916,6 +931,7 @@ export default function DashboardClient({
                                 <div>
                                   <span className="text-xs text-red-300">Dag {a.day}</span>
                                   <p className="text-sm font-medium text-white/50 line-through">{a.challenges?.title}</p>
+                                  {a.challenges?.created_by_admin && <p className="text-[10px] text-gray-600">Bedacht door: {a.challenges.created_by_admin}</p>}
                                 </div>
                                 <span className="shrink-0 rounded bg-red-500/20 px-1.5 py-0.5 text-xs font-bold text-red-400">-10pts</span>
                               </div>
@@ -930,8 +946,9 @@ export default function DashboardClient({
                         <div className="space-y-1.5">
                           {expired.map((a) => (
                             <div key={a.id} className="rounded-lg bg-slate-700/30 px-3 py-2">
-                              <span className="text-xs text-gray-500">Dag {a.day} · 0pts</span>
+                              <span className="text-xs text-gray-500">Dag {a.day} · -5pts</span>
                               <p className="text-sm font-medium text-white/40">{a.challenges?.title}</p>
+                              {a.challenges?.created_by_admin && <p className="text-[10px] text-gray-600">Bedacht door: {a.challenges.created_by_admin}</p>}
                             </div>
                           ))}
                         </div>
@@ -1098,56 +1115,34 @@ export default function DashboardClient({
       {confirmAction && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-6" onClick={() => { setConfirmAction(null); setBonusSelected(false); }}>
           <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            {confirmAction.type === "complete" ? (
-              <>
-                <p className="mb-1 text-center text-3xl">✅</p>
-                <p className="mt-2 text-center text-lg font-extrabold text-white">Challenge kleir?</p>
-                <p className="mt-1 text-center text-sm text-gray-400">&ldquo;{confirmAction.title}&rdquo;</p>
-                <p className="mt-1 text-center text-xs text-emerald-400">Anton gaat da toch nog ff moeten bevestigen, dan krijgde uw puntjes x</p>
-                {confirmAction.hasBonus && confirmAction.bonusDesc && (
-                  <button
-                    type="button"
-                    onClick={() => setBonusSelected(!bonusSelected)}
-                    className={`mt-3 flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
-                      bonusSelected
-                        ? "border-yellow-500 bg-yellow-500/15 text-yellow-300"
-                        : "border-slate-600 bg-slate-800 text-gray-400"
-                    }`}
-                  >
-                    <span>{bonusSelected ? "✅" : "⬜"}</span>
-                    <span>🌟 Bonus ook gedaan? (+{confirmAction.bonusPoints}pts)</span>
-                  </button>
-                )}
-                <div className="mt-5 flex gap-2">
-                  <button onClick={() => { setConfirmAction(null); setBonusSelected(false); }} className="flex-1 rounded-xl bg-slate-700 py-3 text-sm font-medium text-gray-300 transition hover:bg-slate-600 active:scale-95">Annuleer</button>
-                  <button
-                    onClick={() => { handleComplete(confirmAction.id, bonusSelected); setConfirmAction(null); setBonusSelected(false); }}
-                    disabled={loading === confirmAction.id}
-                    className="flex-1 rounded-xl bg-emerald-500 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
-                  >
-                    Sjeker da!
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="mb-1 text-center text-3xl">💀</p>
-                <p className="mt-2 text-center text-lg font-extrabold text-white">Skip?</p>
-                <p className="mt-1 text-center text-sm text-gray-400">&ldquo;{confirmAction.title}&rdquo;</p>
-                <p className="mt-2 text-center text-sm font-bold text-red-400">Skip = -10 punten, altijd.</p>
-                <p className="mt-1 text-center text-xs text-gray-500">Challenge nie gedaan voor middernacht? Dan wordt het automatisch geskipt.</p>
-                <div className="mt-5 flex gap-2">
-                  <button onClick={() => setConfirmAction(null)} className="flex-1 rounded-xl bg-slate-700 py-3 text-sm font-medium text-gray-300 transition hover:bg-slate-600 active:scale-95">Terug</button>
-                  <button
-                    onClick={() => { handleSkip(confirmAction.id); setConfirmAction(null); }}
-                    disabled={loading === confirmAction.id}
-                    className="flex-1 rounded-xl border border-red-500/30 bg-red-900/50 py-3 text-sm font-extrabold text-red-300 transition hover:bg-red-900/70 active:scale-95 disabled:opacity-50"
-                  >
-                    Skip (-10pts)
-                  </button>
-                </div>
-              </>
+            <p className="mb-1 text-center text-3xl">✅</p>
+            <p className="mt-2 text-center text-lg font-extrabold text-white">Challenge kleir?</p>
+            <p className="mt-1 text-center text-sm text-gray-400">&ldquo;{confirmAction.title}&rdquo;</p>
+            <p className="mt-1 text-center text-xs text-emerald-400">Anton gaat da toch nog ff moeten bevestigen, dan krijgde uw puntjes x</p>
+            {confirmAction.hasBonus && confirmAction.bonusDesc && (
+              <button
+                type="button"
+                onClick={() => setBonusSelected(!bonusSelected)}
+                className={`mt-3 flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                  bonusSelected
+                    ? "border-yellow-500 bg-yellow-500/15 text-yellow-300"
+                    : "border-slate-600 bg-slate-800 text-gray-400"
+                }`}
+              >
+                <span>{bonusSelected ? "✅" : "⬜"}</span>
+                <span>🌟 Bonus ook gedaan? (+{confirmAction.bonusPoints}pts)</span>
+              </button>
             )}
+            <div className="mt-5 flex gap-2">
+              <button onClick={() => { setConfirmAction(null); setBonusSelected(false); }} className="flex-1 rounded-xl bg-slate-700 py-3 text-sm font-medium text-gray-300 transition hover:bg-slate-600 active:scale-95">Annuleer</button>
+              <button
+                onClick={() => { handleComplete(confirmAction.id, bonusSelected); setConfirmAction(null); setBonusSelected(false); }}
+                disabled={loading === confirmAction.id}
+                className="flex-1 rounded-xl bg-emerald-500 py-3 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
+              >
+                Sjeker da!
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1183,12 +1178,12 @@ export default function DashboardClient({
               style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, borderTop: "1px solid rgba(245,158,11,0.15)", borderRadius: "20px 20px 0 0" }}
             >
               <div className="mx-auto max-w-lg">
-                <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-amber-400/70">⚡ Mijn huidige challenge</p>
+                <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-amber-400/70">⚡ Mijn challenges</p>
                 {dailyLimitReached ? (
                   <div className="w-full rounded-2xl border border-slate-700 bg-slate-800/80 py-4 text-center">
-                    <p className="text-sm font-bold text-gray-300">🚫 HAHAHAHA daglimiet bereikt loser (2/2)</p>
+                    <p className="text-sm font-bold text-gray-300">Good boy, alles al gedaan, morgen moogder weer invliegen</p>
                     <p className="mt-1 text-xs text-gray-500">
-                      Ff wachten makkerke, nieuwe challenge over{" "}
+                      Nieuwe challenges morgen over{" "}
                       <span className="font-bold text-amber-400">
                         {String(nextDayCountdown.hours).padStart(2, "0")}:{String(nextDayCountdown.minutes).padStart(2, "0")}:{String(nextDayCountdown.seconds).padStart(2, "0")}
                       </span>
@@ -1200,7 +1195,7 @@ export default function DashboardClient({
                     disabled={loading === "new"}
                     className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 text-base font-extrabold text-black shadow-lg shadow-amber-500/30 transition hover:from-amber-400 hover:to-orange-400 active:scale-95 disabled:opacity-50"
                   >
-                    {loading === "new" ? "Laden..." : "🎲 Fiks nieuwe challenge"}
+                    {loading === "new" ? "Laden..." : "🎲 Trek je challenges"}
                   </button>
                 )}
               </div>
@@ -1214,146 +1209,139 @@ export default function DashboardClient({
               >
                 <div className="mx-auto max-w-lg">
                   {challengeCollapsed ? (
-                    // Collapsed: show full preview
                     <>
                       <div className="mb-1.5 flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400/80">⚡ Mijn huidige challenge</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400/80">⚡ Mijn challenges</span>
                         <span className="text-[10px] text-gray-600">▼</span>
                       </div>
                       {active.length > 0 ? (
                         <div className="flex items-center gap-2">
-                          <span className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
-                            difficultyColor[active[0].challenges?.difficulty as keyof typeof difficultyColor] ?? "bg-slate-700 text-gray-300"
-                          }`}>
-                            {active[0].challenges?.categories?.name || "Challenge"}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">
-                            {active[0].challenges?.categories?.name?.toLowerCase() === "gotcha"
-                              ? `Het woord: ${active[0].challenges?.title}`
-                              : active[0].challenges?.title}
-                          </span>
-                          {active[0].target_player_name && (
-                            <span className="shrink-0 text-xs font-semibold text-orange-400">🎯 {active[0].target_player_name}</span>
-                          )}
-                          <span className="shrink-0 text-xs font-extrabold text-amber-400">+{active[0].challenges?.points}pts</span>
+                          <span className="shrink-0 rounded-lg bg-teal-900/50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-teal-300">Doe</span>
+                          <span className="shrink-0 rounded-lg bg-amber-900/50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-amber-300">Gotcha</span>
+                          <span className="min-w-0 flex-1 truncate text-xs text-gray-400">{active.length} actief</span>
                         </div>
                       ) : (
-                        <p className="text-xs font-semibold text-amber-400">⏳ Wachten op bevestiging van Anton</p>
+                        <p className="text-xs font-semibold text-amber-400">⏳ Wachten op bevestiging</p>
                       )}
                     </>
                   ) : (
-                    // Expanded: minimal — just label + category + chevron
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400/80">⚡ Mijn huidige challenge</span>
-                        {active.length > 0 && (
-                          <span className={`rounded-lg px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
-                            difficultyColor[active[0].challenges?.difficulty as keyof typeof difficultyColor] ?? "bg-slate-700 text-gray-300"
-                          }`}>
-                            {active[0].challenges?.categories?.name || "Challenge"}
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400/80">⚡ Mijn challenges</span>
                       <span className="text-[10px] text-gray-600">▲</span>
                     </div>
                   )}
                 </div>
               </button>
 
-              {/* Expanded panel */}
+              {/* Expanded panel with tabs */}
               {!challengeCollapsed && (
-                <div className="bg-slate-950/98 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
-                  <div className="mx-auto max-w-lg space-y-3">
-                    {active.map((a) => (
-                      <div
-                        key={a.id}
-                        className="overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-slate-800/90 via-slate-800/70 to-slate-900/90 shadow-xl"
-                      >
-                        {/* Coloured top accent bar */}
-                        <div className={`h-1 w-full ${
-                          a.challenges?.difficulty === "hard" ? "bg-gradient-to-r from-red-500 to-rose-600" :
-                          a.challenges?.difficulty === "medium" ? "bg-gradient-to-r from-amber-500 to-orange-500" :
-                          "bg-gradient-to-r from-emerald-500 to-teal-500"
-                        }`} />
-                        <div className="p-4">
-                          <div className="mb-3 flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              {a.challenges?.categories?.name?.toLowerCase() === "gotcha" ? (
-                                <>
-                                  <p className="mb-0.5 text-xs font-bold uppercase tracking-widest text-amber-400/60">Het woord:</p>
-                                  <h3 className="text-3xl font-black leading-tight tracking-tight text-white">
-                                    {a.challenges?.title}
-                                  </h3>
-                                </>
-                              ) : (
-                                <h3 className="text-2xl font-black leading-tight tracking-tight text-white">
-                                  {a.challenges?.title}
-                                </h3>
-                              )}
-                            </div>
-                            <span className="shrink-0 rounded-lg bg-amber-500/15 px-2.5 py-1 text-sm font-extrabold text-amber-400 ring-1 ring-amber-500/30">
-                              +{a.challenges?.points} pts
-                            </span>
+                <div className="bg-slate-950/98 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+                  <div className="mx-auto max-w-lg">
+                    {/* Tab toggle */}
+                    {active.length > 0 && (
+                      <div className="mb-3 flex rounded-xl border border-slate-700 bg-slate-800/60 p-0.5">
+                        <button
+                          onClick={() => setChallengeTab("doe")}
+                          className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${challengeTab === "doe" ? "bg-teal-500/20 text-teal-300 shadow" : "text-gray-500"}`}
+                        >
+                          Doe opdracht
+                        </button>
+                        <button
+                          onClick={() => setChallengeTab("gotcha")}
+                          className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${challengeTab === "gotcha" ? "bg-amber-500/20 text-amber-300 shadow" : "text-gray-500"}`}
+                        >
+                          Gotcha
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Active challenge card */}
+                    {(() => {
+                      const doeChallenge = active.find(a => a.challenges?.categories?.name?.toLowerCase().includes("doe"));
+                      const gotchaChallenge = active.find(a => a.challenges?.categories?.name?.toLowerCase().includes("gotcha"));
+                      const shown = challengeTab === "doe" ? doeChallenge : gotchaChallenge;
+
+                      if (!shown && active.length > 0) {
+                        // Fallback: show first active if tab has none
+                        const fallback = active[0];
+                        return (
+                          <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-slate-800/90 via-slate-800/70 to-slate-900/90 p-4 shadow-xl">
+                            <p className="text-sm text-gray-400">Geen {challengeTab === "doe" ? "doe opdracht" : "gotcha"} actief</p>
                           </div>
-                          {/* Countdown to midnight */}
-                          <div className="mb-3 flex items-center gap-1.5 rounded-lg bg-slate-700/40 px-2.5 py-1.5">
-                            <span className="text-xs">⏰</span>
-                            <span className="text-[11px] font-medium text-gray-400">Verloopt over</span>
-                            <span className="ml-auto font-mono text-xs font-bold text-amber-400 tabular-nums">
-                              {String(nextDayCountdown.hours).padStart(2, "0")}:{String(nextDayCountdown.minutes).padStart(2, "0")}:{String(nextDayCountdown.seconds).padStart(2, "0")}
-                            </span>
-                          </div>
-                          {a.target_player_name && (
-                            <div className="mb-2 flex items-center gap-1.5">
-                              <span className="text-sm">🎯</span>
-                              <span className="text-sm font-bold text-orange-400">Target: {a.target_player_name}</span>
+                        );
+                      }
+
+                      if (!shown) return null;
+
+                      return (
+                        <div className="overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-slate-800/90 via-slate-800/70 to-slate-900/90 shadow-xl">
+                          <div className={`h-1 w-full ${challengeTab === "doe" ? "bg-gradient-to-r from-teal-500 to-emerald-500" : "bg-gradient-to-r from-amber-500 to-orange-500"}`} />
+                          <div className="p-4">
+                            <div className="mb-3 flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                {challengeTab === "gotcha" ? (
+                                  <>
+                                    <p className="mb-0.5 text-xs font-bold uppercase tracking-widest text-amber-400/60">Het woord:</p>
+                                    <h3 className="text-3xl font-black leading-tight tracking-tight text-white">{shown.challenges?.title}</h3>
+                                  </>
+                                ) : (
+                                  <h3 className="text-2xl font-black leading-tight tracking-tight text-white">{shown.challenges?.title}</h3>
+                                )}
+                              </div>
+                              <span className="shrink-0 rounded-lg bg-amber-500/15 px-2.5 py-1 text-sm font-extrabold text-amber-400 ring-1 ring-amber-500/30">
+                                +{shown.challenges?.points} pts
+                              </span>
                             </div>
-                          )}
-                          {a.challenges?.created_by_admin && (
-                            <p className="mb-1 text-[10px] text-gray-600">Deze challenge komt van {a.challenges.created_by_admin}</p>
-                          )}
-                          {a.challenges?.description && (
-                            <div className="mt-2 max-h-40 overflow-y-auto">
-                              <p className="text-sm leading-relaxed text-gray-400">
-                                {a.challenges.description}
-                              </p>
+                            <div className="mb-3 flex items-center gap-1.5 rounded-lg bg-slate-700/40 px-2.5 py-1.5">
+                              <span className="text-[11px] font-medium text-gray-400">Verloopt over</span>
+                              <span className="ml-auto font-mono text-xs font-bold text-amber-400 tabular-nums">
+                                {String(nextDayCountdown.hours).padStart(2, "0")}:{String(nextDayCountdown.minutes).padStart(2, "0")}:{String(nextDayCountdown.seconds).padStart(2, "0")}
+                              </span>
+                              <span className="text-[10px] text-red-400/70 font-medium">(-5pts)</span>
                             </div>
-                          )}
-                          {a.challenges?.bonus_points != null && a.challenges.bonus_points > 0 && a.challenges.bonus_description && (
-                            <div className="mt-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2">
-                              <p className="text-xs font-bold text-yellow-400">🌟 Bonus (+{a.challenges.bonus_points} pts)</p>
-                              <p className="text-xs text-yellow-300/70">{a.challenges.bonus_description}</p>
+                            {shown.target_player_name && (
+                              <div className="mb-2 flex items-center gap-1.5">
+                                <span className="text-sm font-bold text-orange-400">Target: {shown.target_player_name}</span>
+                              </div>
+                            )}
+                            {shown.challenges?.description && (
+                              <div className="mt-2 max-h-32 overflow-y-auto">
+                                <p className="text-sm leading-relaxed text-gray-400">{shown.challenges.description}</p>
+                              </div>
+                            )}
+                            {shown.challenges?.created_by_admin && (
+                              <p className="mt-1.5 text-[10px] text-gray-500">Bedacht door: {shown.challenges.created_by_admin}</p>
+                            )}
+                            {shown.challenges?.bonus_points != null && shown.challenges.bonus_points > 0 && shown.challenges.bonus_description && (
+                              <div className="mt-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2">
+                                <p className="text-xs font-bold text-yellow-400">🌟 Bonus (+{shown.challenges.bonus_points} pts)</p>
+                                <p className="text-xs text-yellow-300/70">{shown.challenges.bonus_description}</p>
+                              </div>
+                            )}
+                            <div className="mt-4">
+                              <button
+                                onClick={() => setConfirmAction({
+                                  type: "complete",
+                                  id: shown.id,
+                                  title: shown.challenges?.title || "",
+                                  hasBonus: (shown.challenges?.bonus_points ?? 0) > 0,
+                                  bonusDesc: shown.challenges?.bonus_description ?? undefined,
+                                  bonusPoints: shown.challenges?.bonus_points ?? 0,
+                                })}
+                                disabled={loading === shown.id}
+                                className="w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-teal-400 active:scale-95 disabled:opacity-50"
+                              >
+                                {loading === shown.id ? "..." : "Kleir!"}
+                              </button>
                             </div>
-                          )}
-                          <div className="mt-4 flex gap-2.5">
-                            <button
-                              onClick={() => setConfirmAction({
-                                type: "complete",
-                                id: a.id,
-                                title: a.challenges?.title || "",
-                                hasBonus: (a.challenges?.bonus_points ?? 0) > 0,
-                                bonusDesc: a.challenges?.bonus_description ?? undefined,
-                                bonusPoints: a.challenges?.bonus_points ?? 0,
-                              })}
-                              disabled={loading === a.id}
-                              className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-teal-400 active:scale-95 disabled:opacity-50"
-                            >
-                              {loading === a.id ? "..." : "Kleir!"}
-                            </button>
-                            <button
-                              onClick={() => setConfirmAction({ type: "skip", id: a.id, title: a.challenges?.title || "" })}
-                              disabled={loading === a.id}
-                              className="rounded-2xl border border-red-500/25 bg-red-950/60 px-5 py-3.5 text-sm font-extrabold text-red-400 transition hover:bg-red-900/60 active:scale-95 disabled:opacity-50"
-                            >
-                              Neuj
-                            </button>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })()}
 
+                    {/* Pending challenges */}
                     {pendingOwn.map((a) => (
-                      <div key={a.id} className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+                      <div key={a.id} className="mt-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
                         <div className="flex items-center gap-2">
                           <span className="text-base">⏳</span>
                           <div>
@@ -1372,11 +1360,109 @@ export default function DashboardClient({
         </>
       )}
 
-      {showReveal && (
-        <ChallengeReveal
-          onComplete={handleRevealComplete}
-          animationType={revealAnim}
-        />
+      {/* Drawing animation */}
+      {showRevealAnim && <ChallengeReveal onComplete={handleRevealAnimComplete} />}
+
+      {/* Challenge Reveal Modal */}
+      {showRevealModal && active.length > 0 && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-amber-500/30 bg-gradient-to-b from-slate-800 to-slate-900 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Tab header */}
+            <div className="flex border-b border-slate-700">
+              {(() => {
+                const doeChallenge = active.find(a => a.challenges?.categories?.name?.toLowerCase().includes("doe"));
+                const gotchaChallenge = active.find(a => a.challenges?.categories?.name?.toLowerCase().includes("gotcha"));
+                return (
+                  <>
+                    <button
+                      onClick={() => setChallengeTab("doe")}
+                      className={`flex-1 py-3 text-sm font-bold transition ${challengeTab === "doe" ? "text-teal-400 border-b-2 border-teal-400 bg-teal-500/5" : "text-gray-500 hover:text-gray-300"}`}
+                    >
+                      Doe opdracht
+                    </button>
+                    <button
+                      onClick={() => setChallengeTab("gotcha")}
+                      className={`flex-1 py-3 text-sm font-bold transition ${challengeTab === "gotcha" ? "text-amber-400 border-b-2 border-amber-400 bg-amber-500/5" : "text-gray-500 hover:text-gray-300"}`}
+                    >
+                      Gotcha
+                    </button>
+                  </>
+                );
+              })()}
+            </div>
+            {/* Tab content */}
+            <div className="p-5">
+              {(() => {
+                const doeChallenge = active.find(a => a.challenges?.categories?.name?.toLowerCase().includes("doe"));
+                const gotchaChallenge = active.find(a => a.challenges?.categories?.name?.toLowerCase().includes("gotcha"));
+                const shown = challengeTab === "doe" ? doeChallenge : gotchaChallenge;
+                if (!shown) return <p className="text-center text-gray-400 text-sm">Geen challenge gevonden</p>;
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        {challengeTab === "gotcha" ? (
+                          <>
+                            <p className="mb-1 text-xs font-bold uppercase tracking-widest text-amber-400/70">Het woord:</p>
+                            <h3 className="text-3xl font-black leading-tight text-white">{shown.challenges?.title}</h3>
+                          </>
+                        ) : (
+                          <h3 className="text-2xl font-black leading-tight text-white">{shown.challenges?.title}</h3>
+                        )}
+                      </div>
+                      <span className="shrink-0 rounded-lg bg-amber-500/15 px-2.5 py-1 text-sm font-extrabold text-amber-400 ring-1 ring-amber-500/30">
+                        +{shown.challenges?.points} pts
+                      </span>
+                    </div>
+                    <div className={`inline-block rounded-lg px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                      shown.challenges?.difficulty === "hard" ? "bg-red-900/50 text-red-300" :
+                      shown.challenges?.difficulty === "medium" ? "bg-amber-900/50 text-amber-300" :
+                      "bg-emerald-900/50 text-emerald-300"
+                    }`}>
+                      {shown.challenges?.difficulty}
+                    </div>
+                    {shown.target_player_name && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-bold text-orange-400">Target: {shown.target_player_name}</span>
+                      </div>
+                    )}
+                    {shown.challenges?.description && (
+                      <p className="text-sm leading-relaxed text-gray-300">{shown.challenges.description}</p>
+                    )}
+                    {shown.challenges?.created_by_admin && (
+                      <div className="flex items-center gap-2 rounded-lg bg-slate-700/30 px-3 py-2">
+                        <span className="text-base">✍️</span>
+                        <div>
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500">Bedacht door</p>
+                          <p className="text-sm font-bold text-white">{shown.challenges.created_by_admin}</p>
+                        </div>
+                      </div>
+                    )}
+                    {shown.challenges?.bonus_points != null && shown.challenges.bonus_points > 0 && shown.challenges.bonus_description && (
+                      <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2">
+                        <p className="text-xs font-bold text-yellow-400">🌟 Bonus (+{shown.challenges.bonus_points} pts)</p>
+                        <p className="text-xs text-yellow-300/70">{shown.challenges.bonus_description}</p>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 rounded-lg bg-slate-700/40 px-2.5 py-1.5">
+                      <span className="text-xs">⚠️</span>
+                      <span className="text-[11px] font-medium text-red-400/80">Niet gedaan voor 4u 's nachts = -5 punten</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+            {/* Close button */}
+            <div className="border-t border-slate-700 p-4">
+              <button
+                onClick={handleCloseReveal}
+                className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 py-3 text-sm font-extrabold text-black transition hover:from-amber-400 hover:to-orange-400 active:scale-95"
+              >
+                Begrepen, let&apos;s go! 🔥
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Profile picture viewer modal */}

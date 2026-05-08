@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 type RevealProps = {
   onComplete: () => void;
@@ -448,11 +448,16 @@ function Cocktail({ onComplete }: { onComplete: () => void }) {
 }
 
 export default function ChallengeReveal({ onComplete, animationType }: RevealProps) {
-  const stableOnComplete = useCallback(onComplete, [onComplete]);
-  const type = ANIMATIONS[(animationType ?? Math.floor(Math.random() * ANIMATIONS.length)) % ANIMATIONS.length];
+  // Use a ref so the callback never causes child re-renders
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  const stableOnComplete = useCallback(() => onCompleteRef.current(), []);
+
+  // Pick animation type ONCE on mount
+  const [type] = useState(() => ANIMATIONS[(animationType ?? Math.floor(Math.random() * ANIMATIONS.length)) % ANIMATIONS.length]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="rounded-2xl border border-slate-700 bg-slate-900 p-10 shadow-2xl">
         {type === "slotMachine" && <SlotMachine onComplete={stableOnComplete} />}
         {type === "openBeer" && <OpenBeer onComplete={stableOnComplete} />}

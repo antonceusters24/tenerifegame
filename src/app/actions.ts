@@ -265,22 +265,6 @@ export async function undoConfirmChallenge(assignmentId: string) {
   return { success: true };
 }
 
-export async function skipChallenge(assignmentId: string) {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not logged in" };
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from(getTable("assignments"))
-    .update({ status: "skipped", completed_at: new Date().toISOString() })
-    .eq("id", assignmentId)
-    .eq("user_id", user.id)
-    .eq("status", "active");
-
-  if (error) return { error: "Failed to skip challenge" };
-  return { success: true };
-}
-
 export async function requestNewChallenge(day: number) {
   const user = await getCurrentUser();
   if (!user) return { error: "Not logged in" };
@@ -289,7 +273,7 @@ export async function requestNewChallenge(day: number) {
   const challengesTable = getTable("challenges");
   const assignmentsTable = getTable("assignments");
 
-  // Enforce daily limit: max 2 challenges per person per day
+  // Enforce daily limit: max 1 draw (= 2 challenges) per person per day
   const { count: todayCount } = await supabase
     .from(assignmentsTable)
     .select("id", { count: "exact", head: true })
@@ -307,159 +291,69 @@ export async function requestNewChallenge(day: number) {
 
   const usedIds = (allAssigned || []).map((a) => a.challenge_id);
 
-  // Get this player's full assignment history (all days) for category + difficulty balance
-  const { data: myHistory } = await supabase
-    .from(assignmentsTable)
-    .select(`challenge_id, day, ${challengesTable}(category_id, difficulty)`)
-    .eq("user_id", user.id);
-
-  // Count per category and per difficulty for this player across all days
-  const myCategories: Record<string, number> = {};
-  const myDifficulties: Record<string, number> = {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (myHistory || []).forEach((a: any) => {
-    const nested = a[challengesTable] || a.challenges;
-    const catId = nested?.category_id;
-    if (catId) myCategories[catId] = (myCategories[catId] || 0) + 1;
-    const diff = nested?.difficulty;
-    if (diff) myDifficulties[diff] = (myDifficulties[diff] || 0) + 1;
-  });
-  const myTotal = Object.values(myCategories).reduce((s, n) => s + n, 0) || 0;
-
-  // Get this player's today assignments (for same-day check)
-  const myTodayCats: string[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (myHistory || []).filter((a: any) => a.day === day).forEach((a: any) => {
-    const nested = a[challengesTable] || a.challenges;
-    if (nested?.category_id) myTodayCats.push(nested.category_id);
-  });
-
-  // Get this player's yesterday assignments (for streak prevention)
-  const myYesterdayCats: string[] = [];
-  if (day > 1) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (myHistory || []).filter((a: any) => a.day === day - 1).forEach((a: any) => {
-      const nested = a[challengesTable] || a.challenges;
-      if (nested?.category_id) myYesterdayCats.push(nested.category_id);
-    });
-  }
-
-  // Get global category distribution for today (all players)
-  const { data: todayAssignments } = await supabase
-    .from(assignmentsTable)
-    .select(`challenge_id, ${challengesTable}(category_id)`)
-    .eq("day", day);
-
-  const globalTodayCounts: Record<string, number> = {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (todayAssignments || []).forEach((a: any) => {
-    const nested = a[challengesTable] || a.challenges;
-    const catId = nested?.category_id;
-    if (catId) globalTodayCounts[catId] = (globalTodayCounts[catId] || 0) + 1;
-  });
-  const globalTodayTotal = Object.values(globalTodayCounts).reduce((s, n) => s + n, 0) || 0;
-
-  // Get available challenges (not assigned to ANY player)
-  let query = supabase.from(challengesTable).select("id, category_id, difficulty, requires_target");
+  // Get available challenges per category (not assigned to ANY player)
+  // We need the category names to split into doe/gotcha
+  let query = supabase.from(challengesTable).select("id, category_id, difficulty, requires_target, categories(name)");
   if (usedIds.length > 0) {
     query = query.not("id", "in", `(${usedIds.join(",")})`);
   }
   const { data: available } = await query;
 
   if (!available || available.length === 0) {
-    return { error: "No more challenges available!" };
+    return { error: "Geen challenges meer beschikbaar!" };
   }
 
-  // --- WEIGHTED CATEGORY SELECTION ---
-  // Collect all unique category IDs from available challenges
-  const categoryIds = [...new Set(available.map((c) => c.category_id))];
-
-  // Compute weight for each category
-  const categoryWeights: Record<string, number> = {};
-  for (const catId of categoryIds) {
-    let weight = 1.0;
-
-    // 1. Rubber-band: pull toward 50/50 based on player's history
-    if (myTotal > 0) {
-      const myShare = (myCategories[catId] || 0) / myTotal;
-      const targetShare = 1 / categoryIds.length; // 0.5 for 2 categories
-      // If player has too many of this category, weight goes down
-      weight = Math.max(0.2, 1 + (targetShare - myShare) * 3);
-    }
-
-    // 2. Yesterday streak prevention: only if player got 2 of same yesterday
-    const yesterdaySameCount = myYesterdayCats.filter((c) => c === catId).length;
-    if (yesterdaySameCount >= 2) {
-      weight *= 0.6; // Moderate reduction, not a hard block
-    }
-
-    // 3. Same-day: slight nudge toward variety, but same category twice is totally fine
-    const todaySameCount = myTodayCats.filter((c) => c === catId).length;
-    if (todaySameCount > 0) {
-      weight *= 0.7; // Mild preference for the other category, not strict
-    }
-
-    // 4. Global daily balance: very subtle nudge, not strict
-    if (globalTodayTotal > 2) {
-      const globalShare = (globalTodayCounts[catId] || 0) / globalTodayTotal;
-      const targetGlobalShare = 1 / categoryIds.length;
-      if (globalShare > targetGlobalShare + 0.2) {
-        weight *= 0.9; // Only nudge when heavily skewed
-      }
-    }
-
-    categoryWeights[catId] = weight;
-  }
-
-  // --- WEIGHTED DIFFICULTY SELECTION ---
-  // Balance difficulty distribution: each player should get ~equal easy/medium/hard
-  const difficultyLevels = [...new Set(available.map((c) => c.difficulty).filter(Boolean))];
-  const difficultyWeights: Record<string, number> = {};
-  for (const diff of difficultyLevels) {
-    let dWeight = 1.0;
-    if (myTotal > 0) {
-      const myDiffShare = (myDifficulties[diff] || 0) / myTotal;
-      const targetDiffShare = 1 / difficultyLevels.length; // ~0.33 for 3 difficulties
-      // Pull toward equal distribution
-      dWeight = Math.max(0.3, 1 + (targetDiffShare - myDiffShare) * 3);
-    }
-    difficultyWeights[diff] = dWeight;
-  }
-
-  // Assign weight to each available challenge based on its category AND difficulty
-  const weighted = available.map((c) => ({
-    ...c,
-    weight: (categoryWeights[c.category_id] || 1) * (difficultyWeights[c.difficulty] || 1),
-  }));
-
-  // Weighted random selection
-  const totalWeight = weighted.reduce((sum, c) => sum + c.weight, 0);
-  let rand = Math.random() * totalWeight;
-  let selected = weighted[0];
-  for (const c of weighted) {
-    rand -= c.weight;
-    if (rand <= 0) {
-      selected = c;
-      break;
-    }
-  }
-
-  // If challenge requires a target, pick a random other player
-  let targetPlayerName: string | null = null;
-  if (selected.requires_target) {
-    const PLAYERS = ["Lander", "Berten", "Dries", "Anton"];
-    const otherPlayers = PLAYERS.filter((p) => p !== user.name);
-    targetPlayerName = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
-  }
-
-  const { error } = await supabase.from(assignmentsTable).insert({
-    user_id: user.id,
-    challenge_id: selected.id,
-    day,
-    target_player_name: targetPlayerName,
+  // Split by category
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const doeAvailable = available.filter((c: any) => {
+    const name = c.categories?.name || "";
+    return name.toLowerCase().includes("doe");
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gotchaAvailable = available.filter((c: any) => {
+    const name = c.categories?.name || "";
+    return name.toLowerCase().includes("gotcha");
   });
 
-  if (error) return { error: "Failed to assign challenge" };
+  if (doeAvailable.length === 0 || gotchaAvailable.length === 0) {
+    return { error: "Niet genoeg challenges beschikbaar (minstens 1 doe + 1 gotcha nodig)" };
+  }
+
+  // Pick one random from each category
+  const doeChallenge = doeAvailable[Math.floor(Math.random() * doeAvailable.length)];
+  const gotchaChallenge = gotchaAvailable[Math.floor(Math.random() * gotchaAvailable.length)];
+
+  // Assign target if needed
+  const PLAYERS = ["Lander", "Berten", "Dries", "Anton"];
+  const otherPlayers = PLAYERS.filter((p) => p !== user.name);
+
+  let doeTarget: string | null = null;
+  if (doeChallenge.requires_target) {
+    doeTarget = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+  }
+
+  let gotchaTarget: string | null = null;
+  if (gotchaChallenge.requires_target) {
+    gotchaTarget = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+  }
+
+  // Insert both assignments
+  const { error } = await supabase.from(assignmentsTable).insert([
+    {
+      user_id: user.id,
+      challenge_id: doeChallenge.id,
+      day,
+      target_player_name: doeTarget,
+    },
+    {
+      user_id: user.id,
+      challenge_id: gotchaChallenge.id,
+      day,
+      target_player_name: gotchaTarget,
+    },
+  ]);
+
+  if (error) return { error: "Failed to assign challenges" };
   return { success: true };
 }
 
