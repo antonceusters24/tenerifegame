@@ -77,7 +77,7 @@ export async function getCurrentUser() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("users")
-    .select("id, name, role, pin_changed, emoji, avatar_url")
+    .select("id, name, role, pin_changed, emoji, avatar_url, is_banned")
     .eq("id", userId)
     .single();
 
@@ -447,4 +447,48 @@ export async function deleteCFSession(sessionId: string) {
 
   if (error) return { error: "Failed to delete session" };
   return { success: true };
+}
+
+// Admin ban/unban users — only Anton
+export async function banUser(userId: string) {
+  const user = await getCurrentUser();
+  if (!user || user.name !== "Anton") return { error: "Unauthorized" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("users")
+    .update({ is_banned: true })
+    .eq("id", userId)
+    .neq("name", "Anton"); // Can't ban yourself
+
+  if (error) return { error: "Failed to ban user" };
+  return { success: true };
+}
+
+export async function unbanUser(userId: string) {
+  const user = await getCurrentUser();
+  if (!user || user.name !== "Anton") return { error: "Unauthorized" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("users")
+    .update({ is_banned: false })
+    .eq("id", userId);
+
+  if (error) return { error: "Failed to unban user" };
+  return { success: true };
+}
+
+export async function getBannedUsers() {
+  const user = await getCurrentUser();
+  if (!user || user.name !== "Anton") return { error: "Unauthorized" };
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("users")
+    .select("id, name, is_banned")
+    .eq("role", "player")
+    .order("name");
+
+  return { users: data || [] };
 }

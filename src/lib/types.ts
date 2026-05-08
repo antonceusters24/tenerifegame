@@ -5,6 +5,7 @@ export type User = {
   pin_changed: boolean;
   emoji: string;
   avatar_url: string | null;
+  is_banned: boolean;
 };
 
 export type Category = {

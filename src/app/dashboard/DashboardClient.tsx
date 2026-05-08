@@ -194,6 +194,7 @@ function PodiumModal({
     setDragging(true);
   }
   function handleTouchMove(e: React.TouchEvent) {
+    e.preventDefault();
     const dy = e.touches[0].clientY - startY.current;
     setDragY(Math.max(0, dy));
   }
@@ -207,7 +208,7 @@ function PodiumModal({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/85"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/85 touch-none overflow-hidden"
       onClick={onClose}
       style={{ opacity: dragY > 0 ? Math.max(0.3, 1 - dragY / 300) : 1 }}
     >
@@ -623,9 +624,8 @@ export default function DashboardClient({
     setUploading(false);
   }
 
-  // Ban screen for specific users
-  const BANNED_USERS = [""];
-  if (BANNED_USERS.includes(user.name)) {
+  // Ban screen for banned users
+  if (user.is_banned) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-red-950 via-slate-950 to-black p-6 text-center">
         <div className="animate-pulse text-8xl mb-6">🚫</div>
@@ -729,6 +729,15 @@ export default function DashboardClient({
                         className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition hover:bg-slate-700"
                       >
                         <span>'t Galerieke</span>
+                      </Link>
+                    )}
+                    {user.name === "Anton" && (
+                      <Link
+                        href="/admin/settings"
+                        onClick={() => setShowMenu(false)}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition hover:bg-slate-700"
+                      >
+                        <span>Settings </span>
                       </Link>
                     )}
                     <form action={logout}>
