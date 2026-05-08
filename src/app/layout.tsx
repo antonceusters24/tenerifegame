@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import EasterEggs from "@/components/EasterEggs";
+import IdleTimeout from "@/components/IdleTimeout";
 import PullToRefresh from "@/components/PullToRefresh";
 
 const geistSans = Geist({
@@ -43,6 +44,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <PullToRefresh />
+        <IdleTimeout />
         {children}
         <EasterEggs />
       </body>
