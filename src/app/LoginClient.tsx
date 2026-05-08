@@ -861,7 +861,7 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
     const result = await validateLogin(name, pin);
     if (!result.valid) { setError("Verkeerde PIN of naam, probeer opnieuw"); triggerShake(); return; }
 
-    if (!result.isAdmin && !trolled && Math.random() < 0.3) {
+    if (gameActive && !result.isAdmin && !trolled && Math.random() < 0.3) {
       setTrollMsg(TROLL_MESSAGES[Math.floor(Math.random() * TROLL_MESSAGES.length)]);
       setTrolled(true);
       const pinInput = form.querySelector('input[name="pin"]') as HTMLInputElement;
@@ -895,11 +895,12 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
   }
   return (
     <div className={`login-card relative z-10 w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-800/80 p-8 shadow-2xl backdrop-blur ${shaking ? "animate-shake" : ""}`}>
-      <h1 className="animate-slideDown mb-1 text-center text-3xl font-extrabold text-white">
+      <h1 className="mb-1 text-center text-3xl font-extrabold text-white">
         <span className="inline-block cursor-pointer select-none" onClick={handleBeerTap}>🍺</span>{" "}
         Tenerife 2026
       </h1>
-      <p className="animate-fadeIn mb-6 text-center text-sm text-gray-400 italic">{subtitle}</p>
+      {gameActive && <p className="mb-6 text-center text-sm text-gray-400 italic">{subtitle}</p>}
+      {!gameActive && <p className="mb-6 text-center text-sm text-gray-400">Log in om verder te gaan</p>}
 
       {trollMsg && (
         <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-center text-sm text-amber-300 animate-fadeIn">{trollMsg}</div>
@@ -964,11 +965,25 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
               </div>
             )}
 
-            {/* ── REGULAR LOGIN (70% or before/after game) ── */}
+            {/* ── REGULAR LOGIN (before game / 55% during game) ── */}
             {!showGameLogin && (
               <>
-                <label className="mb-3 block text-sm font-medium text-gray-300 text-center">Wie zijde gij?</label>
-                {renderCardSelect()}
+                <label className="mb-1 block text-sm font-medium text-gray-300">Wie zijde gij?</label>
+                {gameActive ? (
+                  <>
+                    <label className="mb-3 block text-sm font-medium text-gray-300 text-center">Wie zijde gij?</label>
+                    {renderCardSelect()}
+                  </>
+                ) : (
+                  <select
+                    value={selectedPlayer}
+                    onChange={(e) => setSelectedPlayer(e.target.value)}
+                    className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2.5 text-white focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="">Kiest uwe naam</option>
+                    {PLAYERS.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+                  </select>
+                )}
               </>
             )}
 

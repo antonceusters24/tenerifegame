@@ -1204,7 +1204,7 @@ export default function DashboardClient({
             <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, borderRadius: "20px 20px 0 0", overflow: "hidden" }}>
               {/* Peek strip */}
               <button
-                className="w-full border-t border-amber-500/20 bg-slate-950/98 px-4 pt-2.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] backdrop-blur-md"
+                className="w-full border-t border-amber-500/20 bg-slate-950/98 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md"
                 onClick={() => setChallengeCollapsed((c) => !c)}
               >
                 <div className="mx-auto max-w-lg">
