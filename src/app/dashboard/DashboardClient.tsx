@@ -1247,15 +1247,15 @@ export default function DashboardClient({
             <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, borderRadius: "20px 20px 0 0", overflow: "hidden" }}>
               {/* Peek strip */}
               <button
-                className="w-full border-t border-amber-500/20 bg-slate-950/98 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md"
+                className="w-full border-t-2 border-amber-500/40 bg-gradient-to-t from-slate-900 via-slate-900/98 to-slate-800/95 px-4 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] backdrop-blur-md shadow-[0_-8px_30px_rgba(0,0,0,0.5)]"
                 onClick={() => setChallengeCollapsed((c) => !c)}
               >
                 <div className="mx-auto max-w-lg">
                   {challengeCollapsed ? (
                     <>
                       <div className="mb-1.5 flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400/80">⚡ Mijn challenges</span>
-                        <span className="text-[10px] text-gray-600">▼</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">⚡ Mijn challenges</span>
+                        <span className="text-[10px] text-gray-500">▼</span>
                       </div>
                       {active.length > 0 ? (
                         <div className="flex items-center gap-2">
