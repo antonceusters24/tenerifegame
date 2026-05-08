@@ -1499,7 +1499,7 @@ export default function DashboardClient({
               ✕ Sluiten
             </button>
             <p className="mb-3 text-5xl">🏝️</p>
-            <h2 className="text-2xl font-black text-white">Welkom in Guido&apos;s fokhok!</h2>
+            <h2 className="text-2xl font-black text-white">Dag vrienden! Binnen enkele uurtjes arriveren we in Guido&apos;s fokhok!</h2>
             <p className="mt-2 text-sm font-medium text-gray-300">Let the games begin</p>
             <div className="mt-4 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-400">
               ⏳ Vanaf morgen 11u begint het voor echt...
