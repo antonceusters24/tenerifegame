@@ -289,7 +289,7 @@ function EndScreen({
       </div>
 
       {/* Minimal top-right logout */}
-      <div className="mb-4 flex w-full justify-end">
+      <div className="mb-2 flex w-full justify-end">
         <form action={logout}>
           <button className="rounded-lg bg-slate-800/60 px-2.5 py-1.5 text-gray-500 transition hover:bg-slate-700 hover:text-gray-300" title="Logout">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -302,8 +302,8 @@ function EndScreen({
       </div>
 
       {/* Hero — avatar + title */}
-      <div className="mb-6 flex flex-col items-center text-center">
-        <div className="relative mb-4">
+      <div className="mb-4 flex flex-col items-center text-center">
+        <div className="relative mb-3">
           {/* Multi-layer glow */}
           <div className="absolute -inset-4 rounded-full bg-amber-500/15 blur-2xl animate-pulse" />
           <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-amber-400/30 to-orange-500/20 blur-lg" />
@@ -313,10 +313,10 @@ function EndScreen({
               <img
                 src={user.avatar_url}
                 alt=""
-                className="h-28 w-28 rounded-full object-cover"
+                className="h-22 w-22 rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-900 text-6xl">
+              <div className="flex h-22 w-22 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-900 text-5xl">
                 {user.emoji || "🎮"}
               </div>
             )}
@@ -324,37 +324,37 @@ function EndScreen({
         </div>
 
         <h2
-          className="text-4xl font-black tracking-tight text-white"
+          className="text-3xl font-black tracking-tight text-white"
           style={{ textShadow: "0 0 40px rgba(245,158,11,0.5)" }}
         >
           't Zit erop, {user.name}!
         </h2>
-        <p className="mt-1.5 text-xs font-bold text-amber-400/60 tracking-[0.25em] uppercase">Tenerife 2026</p>
+        <p className="mt-1 text-xs font-bold text-amber-400/60 tracking-[0.25em] uppercase">Tenerife 2026</p>
       </div>
 
       {/* Survivor trophy — for everyone */}
-      <div className="mb-5 w-full overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-800/80 to-slate-900/80 px-4 py-5 text-center shadow-xl backdrop-blur">
+      <div className="mb-3 w-full overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-800/80 to-slate-900/80 px-4 py-3.5 text-center shadow-xl backdrop-blur">
         <div className="relative inline-block">
-          <span className="text-6xl" style={{ filter: "drop-shadow(0 0 20px rgba(245,158,11,0.8))" }}>🏆</span>
+          <span className="text-5xl" style={{ filter: "drop-shadow(0 0 20px rgba(245,158,11,0.8))" }}>🏆</span>
           <div className="absolute -inset-4 -z-10 rounded-full bg-amber-500/20 blur-xl" />
         </div>
-        <p className="mt-3 text-base font-extrabold text-white tracking-tight">Tenerife 2026 Survivor</p>
-        <p className="mt-0.5 text-xs text-amber-400/60">Proficiat! Ge hebt het allemaal overleefd makkerke</p>
+        <p className="mt-2 text-sm font-extrabold text-white tracking-tight">Tenerife 2026 Survivor</p>
+        <p className="mt-0.5 text-[11px] text-amber-400/60">Proficiat! Ge hebt het allemaal overleefd makkerke</p>
       </div>
 
       {/* Rank badges */}
       {endStats && (
-        <div className="mb-4 grid w-full grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-amber-500/10 to-slate-800/60 px-3 py-4 text-center shadow-lg">
+        <div className="mb-3 grid w-full grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-amber-500/25 bg-gradient-to-b from-amber-500/10 to-slate-800/60 px-3 py-3 text-center shadow-lg">
             <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400/60">🎯 Challenges</p>
-            <p className="mt-2 text-4xl font-black text-white">{rankEmoji(endStats.challengeRank)}</p>
-            <p className="mt-1 text-xl font-black text-white">#{endStats.challengeRank}</p>
+            <p className="mt-1.5 text-3xl font-black text-white">{rankEmoji(endStats.challengeRank)}</p>
+            <p className="mt-0.5 text-lg font-black text-white">#{endStats.challengeRank}</p>
             <p className="text-[10px] text-gray-500">van {endStats.totalPlayers}</p>
           </div>
-          <div className="rounded-2xl border border-red-500/25 bg-gradient-to-b from-red-500/10 to-slate-800/60 px-3 py-4 text-center shadow-lg">
+          <div className="rounded-2xl border border-red-500/25 bg-gradient-to-b from-red-500/10 to-slate-800/60 px-3 py-3 text-center shadow-lg">
             <p className="text-[10px] font-bold uppercase tracking-widest text-red-400/60">👲 Chinese Fucking</p>
-            <p className="mt-2 text-4xl font-black text-white">{rankEmoji(endStats.cfRank)}</p>
-            <p className="mt-1 text-xl font-black text-white">#{endStats.cfRank}</p>
+            <p className="mt-1.5 text-3xl font-black text-white">{rankEmoji(endStats.cfRank)}</p>
+            <p className="mt-0.5 text-lg font-black text-white">#{endStats.cfRank}</p>
             <p className="text-[10px] text-gray-500">van {endStats.totalPlayers}</p>
           </div>
         </div>
@@ -362,9 +362,9 @@ function EndScreen({
 
       {/* Personal verdict */}
       {msg && (
-        <div className="mb-5 w-full rounded-2xl border border-amber-500/15 bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-4 shadow-xl backdrop-blur">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-amber-400/70">⚡ Uw eindverdict</p>
-          <p className="text-sm leading-relaxed text-gray-100">{msg}</p>
+        <div className="mb-3 w-full rounded-2xl border border-amber-500/15 bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-3.5 shadow-xl backdrop-blur">
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400/70">⚡ Uw eindverdict</p>
+          <p className="text-xs leading-relaxed text-gray-100">{msg}</p>
         </div>
       )}
 

@@ -677,7 +677,7 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
                 {/* Strike effect */}
                 {struck && (
                   <>
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl z-30 animate-bounce">⚡</div>
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl z-30 animate-bounce">🍺</div>
                     <div className="absolute inset-0 rounded-xl bg-yellow-300/20 animate-ping" />
                   </>
                 )}
@@ -886,7 +886,7 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
     return (
       <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-800/80 p-8 shadow-2xl backdrop-blur">
         <div className="flex flex-col items-center gap-4 py-8 animate-fadeIn">
-          <div className="text-4xl animate-bounce">�</div>
+          <div className="text-4xl animate-bounce">🍺</div>
           <p className="text-lg font-bold text-white">Bezig met inloggen...</p>
           <p className="text-sm text-gray-400 italic">Even geduld kameraad</p>
         </div>
