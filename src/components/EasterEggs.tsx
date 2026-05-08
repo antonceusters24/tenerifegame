@@ -24,14 +24,14 @@ const EASTER_EGGS: EasterEgg[] = [
   { trigger: "Gratis punten hier!", response: "Haha gij gelooft ook alles eh mongool", emoji: "🎰" },
   { trigger: "Lander zegt...", response: "boeie, niemand luistert daar dieje", emoji: "🗣️" },
   { trigger: "Berten zijn IQ =", response: "Error 404: Not Found", emoji: "🔢" },
-  { trigger: "Klik voor een compliment", response: "Gij hebt echt ne schone volwaardige pens", emoji: "💐" },
+  { trigger: "Klik voor een compliment", response: "Meej awen dikken buik", emoji: "💐" },
   { trigger: "Geheim niews...", response: "Van vapen word je kaal", emoji: "🤐" },
-  { trigger: "Druk als ge ne stoere zijt", response: "Ah kijk, nen dappere downie", emoji: "🦁" },
+  { trigger: "Druk als ge ne stoere zijt", response: "Fucking downie", emoji: "🦁" },
   { trigger: "Wat is het wachtwoord?", response: "LanderkeuhPanterkeuh69", emoji: "🔐" },
   { trigger: "Niet aankomen!", response: "Te laat. Nu hebde HIV.", emoji: "☣️" },
   { trigger: "Tenerife hack ontdekt", response: "Ge zijt gehacked. Groetjes, Anton.", emoji: "💻" },
   { trigger: "Klik voor buikspieren", response: "Door niks te doen krijgde geen buikspieren, tamme zak", emoji: "🏋️" },
-  { trigger: "Dries zegt hi", response: "Dries zegt eigenlijk nooit iets zinnigs", emoji: "👋" },
+  { trigger: "Dries zegt...", response: "dat Berten een adje moet doen", emoji: "👋" },
   { trigger: "Geheime knop", response: "Anton krijgt +100pts. Merci!", emoji: "🔴" },
 ];
 
