@@ -968,7 +968,6 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
             {/* ── REGULAR LOGIN (before game / 55% during game) ── */}
             {!showGameLogin && (
               <>
-                <label className="mb-1 block text-sm font-medium text-gray-300">Wie zijde gij?</label>
                 {gameActive ? (
                   <>
                     <label className="mb-3 block text-sm font-medium text-gray-300 text-center">Wie zijde gij?</label>
