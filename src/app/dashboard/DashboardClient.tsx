@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient as createBrowserClient } from "@/lib/supabase-browser";
 import { getTable } from "@/lib/tables";
 import { User, Assignment, PendingConfirmation } from "@/lib/types";
@@ -185,14 +185,42 @@ function PodiumModal({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<"challenge" | "cf">("challenge");
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startY = useRef(0);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    startY.current = e.touches[0].clientY;
+    setDragging(true);
+  }
+  function handleTouchMove(e: React.TouchEvent) {
+    const dy = e.touches[0].clientY - startY.current;
+    setDragY(Math.max(0, dy));
+  }
+  function handleTouchEnd() {
+    setDragging(false);
+    if (dragY > 100) {
+      onClose();
+    }
+    setDragY(0);
+  }
+
   return (
     <div
       className="fixed inset-0 z-[200] flex items-end justify-center bg-black/85"
       onClick={onClose}
+      style={{ opacity: dragY > 0 ? Math.max(0.3, 1 - dragY / 300) : 1 }}
     >
       <div
         className="w-full max-w-md rounded-t-3xl bg-slate-900 pb-10 pt-5 px-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: `translateY(${dragY}px)`,
+          transition: dragging ? "none" : "transform 0.3s ease-out",
+        }}
       >
         {/* Handle */}
         <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-slate-700" />

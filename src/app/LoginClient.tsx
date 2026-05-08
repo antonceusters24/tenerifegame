@@ -886,7 +886,7 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
     return (
       <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-800/80 p-8 shadow-2xl backdrop-blur">
         <div className="flex flex-col items-center gap-4 py-8 animate-fadeIn">
-          <div className="text-4xl animate-bounce">🌞</div>
+          <div className="text-4xl animate-bounce">�</div>
           <p className="text-lg font-bold text-white">Bezig met inloggen...</p>
           <p className="text-sm text-gray-400 italic">Even geduld kameraad</p>
         </div>
@@ -982,7 +982,7 @@ export default function LoginClient({ avatarUrls = {} }: LoginClientProps) {
                   >
                     <option value="">Kiest uwe naam</option>
                     {PLAYERS.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
-                    {ADMINS.map((a) => <option key={a.name} value={a.name}>{a.label}</option>)}
+                    {ADMINS.map((a) => <option key={a.name} value={a.name}>{a.label} (Admin)</option>)}
                   </select>
                 )}
               </>
