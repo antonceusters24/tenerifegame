@@ -16,10 +16,10 @@ const PROD_ACTIVATION_TIME = "2026-05-12T16:00:00Z"; // 18:00 Belgian time (1h b
 const PROD_CHALLENGES_START = "2026-05-13T08:00:00Z";
 const PROD_GAME_END = "2026-05-19T03:00:00Z"; // 4:00 AM Tenerife — last challenges expired
 
-// Test game dates (shifted so today May 8 = Day 5 = active)
+// Test game dates (shifted so today May 12 = before game)
 function buildTestDates(): string[] {
   const dates: string[] = [];
-  const start = new Date("2026-05-04");
+  const start = new Date("2026-05-14");
   for (let i = 0; i < 7; i++) {
     const d = new Date(start);
     d.setDate(d.getDate() + i);
@@ -30,7 +30,7 @@ function buildTestDates(): string[] {
 
 const TEST_GAME_DATES = buildTestDates();
 const TEST_TRIP_START = TEST_GAME_DATES[0];
-const TEST_ACTIVATION_TIME = "2026-05-04T10:30:00Z";
+const TEST_ACTIVATION_TIME = "2026-05-14T10:30:00Z";
 const TEST_CHALLENGES_START = TEST_GAME_DATES[1] + "T08:00:00Z"; // 9 AM Canary, same as prod
 const TEST_GAME_END = TEST_GAME_DATES[TEST_GAME_DATES.length - 1] + "T23:00:00Z";
 

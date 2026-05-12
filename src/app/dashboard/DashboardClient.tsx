@@ -766,6 +766,9 @@ export default function DashboardClient({
             {/* Hero */}
             <div className="text-center">
               <p className="text-7xl animate-bounce" style={{ animationDuration: "3s" }}>🏝️</p>
+              <p className="mt-2 text-[10px] text-gray-400 leading-relaxed">
+                De eerste die dit leest en een screenshot stuurt naar Anton, krijgt een kleine attentie bij aankomst! 🤫
+              </p>
               <h2 className="mt-2 text-5xl font-black tracking-tight text-white" style={{ textShadow: "0 0 40px rgba(245, 158, 11, 0.4), 0 0 80px rgba(245, 158, 11, 0.1)" }}>
                 TENERIFE
               </h2>
@@ -847,23 +850,6 @@ export default function DashboardClient({
                 ))}
               </div>
             </div>
-
-            {/* Challenge counts (test-only, Anton-only) */}
-            {challengeCounts && (
-              <div className="w-full rounded-xl border border-slate-700/40 bg-slate-800/40 px-3 py-2">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1">🧪 Challenges in DB</p>
-                <div className="flex items-center gap-3">
-                  {challengeCounts.map((c) => (
-                    <span key={c.name} className="text-[11px] text-gray-300">
-                      {c.name}: <span className="font-bold text-amber-400">{c.count}</span>
-                    </span>
-                  ))}
-                  <span className="text-[11px] text-gray-500 ml-auto">
-                    Σ {challengeCounts.reduce((sum, c) => sum + c.count, 0)}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
