@@ -1,474 +1,348 @@
 "use client";
 
 import { useState } from "react";
-import { User, Category } from "@/lib/types";
-import { addChallenge, updateChallenge, deleteChallenge, logout } from "../actions";
+import { User } from "@/lib/types";
+import { logout } from "../actions";
+import { getCurrentDay, getGameStatus } from "@/lib/game";
+import Link from "next/link";
 
-type ChallengeWithCat = {
+type AssignmentRow = {
   id: string;
-  title: string;
-  description: string;
-  difficulty: string;
-  points: number;
-  requires_target: boolean;
-  created_by_admin: string | null;
-  bonus_description: string | null;
-  bonus_points: number;
-  categories: { name: string } | null;
+  user_id: string;
+  challenge_id: string;
+  day: number;
+  status: string;
+  assigned_at: string;
+  completed_at: string | null;
+  target_player_name: string | null;
+  bonus_completed: boolean;
+  challenges: {
+    id: string;
+    title: string;
+    difficulty: string;
+    points: number;
+    bonus_description: string | null;
+    bonus_points: number;
+    created_by_admin: string | null;
+    categories: { name: string } | null;
+  } | null;
+  users: { name: string; emoji: string } | null;
 };
 
-const DIFFICULTY_POINTS: Record<string, number> = { easy: 5, medium: 10, hard: 20 };
+type PlayerRow = { id: string; name: string; emoji: string };
+
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-blue-500/10 text-blue-300 border-blue-500/20",
+  completed: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+  expired: "bg-slate-500/10 text-gray-400 border-slate-600/30",
+};
 
 export default function AdminClient({
   user,
-  categories,
-  challenges: initialChallenges,
-  adminNames,
+  assignments: rawAssignments,
+  players,
+  totalMyChallenges,
 }: {
   user: User;
-  categories: Category[];
-  challenges: ChallengeWithCat[];
-  adminNames: string[];
+  assignments: AssignmentRow[];
+  players: PlayerRow[];
+  totalMyChallenges: number;
 }) {
-  const [challenges, setChallenges] = useState(initialChallenges);
-  const [tab, setTab] = useState<"add" | "list">("add");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [requiresTarget, setRequiresTarget] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [gotchaDesc, setGotchaDesc] = useState(false);
-  const [points, setPoints] = useState(10);
-  const [bonusActive, setBonusActive] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editBonusActive, setEditBonusActive] = useState(false);
-  const [editLoading, setEditLoading] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [dayFilter, setDayFilter] = useState<number | "all">("all");
+  const [playerFilter, setPlayerFilter] = useState<string>("all");
   const [showMine, setShowMine] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
-  const currentAdminName = user.name.replace(" (Admin)", "");
+  const currentDay = getCurrentDay();
+  const gameStatus = getGameStatus();
+  const adminName = user.name.replace(" (Admin)", "");
 
-  async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setMsg("");
-    const form = new FormData(e.currentTarget);
-    const res = await addChallenge(form);
-    if ("error" in res) {
-      setMsg(res.error!);
-    } else {
-      setMsg("Challenge added! 🎉");
-      e.currentTarget.reset();
-      setRequiresTarget(false);
-      setSelectedCategory("");
-      setGotchaDesc(false);
-      setPoints(10);
-      setBonusActive(false);
-      window.location.reload();
+  // Normalize statuses: pending → active, then expired if day has passed
+  const assignments = rawAssignments.map((a) => {
+    const status = a.status === "pending" ? "active" : a.status;
+    if (status === "active") {
+      // Game is over — all remaining active are expired
+      if (gameStatus === "after") return { ...a, status: "expired" };
+      // Day has passed during active game
+      if (currentDay && a.day < currentDay) return { ...a, status: "expired" };
+      return { ...a, status: "active" };
     }
-    setLoading(false);
+    return { ...a, status };
+  });
+
+  // Get unique days from assignments
+  const days = Array.from(new Set(assignments.map((a) => a.day))).sort((a, b) => a - b);
+
+  // Filter assignments
+  let filteredAssignments = assignments;
+  if (dayFilter !== "all") {
+    filteredAssignments = filteredAssignments.filter((a) => a.day === dayFilter);
   }
-
-  async function handleEdit(e: React.FormEvent<HTMLFormElement>, challengeId: string) {
-    e.preventDefault();
-    setEditLoading(true);
-    const form = new FormData(e.currentTarget);
-    const res = await updateChallenge(challengeId, form);
-    if ("error" in res) {
-      alert(res.error);
-    } else {
-      setEditingId(null);
-      // Update local state instead of reloading (keeps us on the list tab)
-      const updated = {
-        id: challengeId,
-        title: form.get("title") as string,
-        description: form.get("description") as string || "",
-        difficulty: form.get("difficulty") as string,
-        points: parseInt(form.get("points") as string) || 10,
-        requires_target: form.get("requires_target") === "true",
-        created_by_admin: form.get("created_by_admin") as string || null,
-        bonus_description: form.get("bonus_description") as string || null,
-        bonus_points: parseInt(form.get("bonus_points") as string) || 0,
-        categories: { name: categories.find((cat) => cat.id === form.get("category_id"))?.name || "" },
-      };
-      setChallenges((prev) => prev.map((c) => c.id === challengeId ? updated : c));
-    }
-    setEditLoading(false);
+  if (playerFilter !== "all") {
+    filteredAssignments = filteredAssignments.filter((a) => a.user_id === playerFilter);
   }
-
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this challenge?")) return;
-    await deleteChallenge(id);
-    setChallenges((prev) => prev.filter((c) => c.id !== id));
-  }
-
-  // Get unique category names for subtabs
-  const categoryNames = Array.from(new Set(challenges.map((c) => c.categories?.name).filter(Boolean))) as string[];
-
-  // Filter challenges by category and "mine"
-  let filteredChallenges = categoryFilter === "all"
-    ? challenges
-    : challenges.filter((c) => c.categories?.name === categoryFilter);
   if (showMine) {
-    filteredChallenges = filteredChallenges.filter((c) => c.created_by_admin === currentAdminName);
+    filteredAssignments = filteredAssignments.filter((a) => a.challenges?.created_by_admin === adminName);
   }
 
-  const tabs = [
-    { key: "add" as const, label: "➕ Add Challenge" },
-    { key: "list" as const, label: `📋 All Challenges (${challenges.length})` },
-  ];
+  // "Mijn" stats
+  const myAssignedCount = assignments.filter((a) => a.challenges?.created_by_admin === adminName).length;
+  const myWaitingCount = totalMyChallenges - myAssignedCount;
+
+  // Group assignments by player
+  const assignmentsByPlayer = new Map<string, AssignmentRow[]>();
+  filteredAssignments.forEach((a) => {
+    const playerName = a.users?.name || "Unknown";
+    if (!assignmentsByPlayer.has(playerName)) {
+      assignmentsByPlayer.set(playerName, []);
+    }
+    assignmentsByPlayer.get(playerName)!.push(a);
+  });
+
+  // Stats
+  const activeCount = assignments.filter((a) => a.status === "active").length;
+  const completedCount = assignments.filter((a) => a.status === "completed").length;
+  const expiredCount = assignments.filter((a) => a.status === "expired").length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-lg">
         {/* Header */}
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <h1 className="shrink-0 text-2xl font-extrabold text-white">
-            ⚙️ Admin
-          </h1>
-          <form action={logout}>
-            <button className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700" title="Logout">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </button>
-          </form>
-        </div>
-
-        {/* Info */}
-        <div className="mb-4 rounded-xl border border-slate-700 bg-slate-800/40 p-4">
-          <p className="text-sm text-gray-400">
-            Voeg challenges toe aan de pool. Ze worden <strong className="text-amber-400">willekeurig toegewezen</strong> aan
-            spelers elke dag. Elke challenge kan maar 1 keer gebruikt worden. Categorieën worden gespreid
-            zodat max 2 spelers dezelfde soort krijgen per dag.
-          </p>
-        </div>
-
-        {/* Tabs */}
-        <div className="mb-4 flex gap-2">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                tab === t.key
-                  ? "bg-amber-500 text-black shadow"
-                  : "bg-slate-700/50 text-gray-300 hover:bg-slate-700"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {msg && (
-          <div className="mb-4 rounded-lg bg-amber-500/20 px-4 py-2 text-sm text-amber-300">
-            {msg}
-          </div>
-        )}
-
-        {/* Add Challenge */}
-        {tab === "add" && (
-          <form
-            onSubmit={handleAdd}
-            className="space-y-4 rounded-xl border border-slate-700 bg-slate-800/80 p-6 shadow-lg backdrop-blur"
-          >
-            <h2 className="text-lg font-bold text-white">
-              Add New Challenge
-            </h2>
-            <input type="hidden" name="created_by_admin" value={currentAdminName} />
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-300">
-                Category
-              </label>
-              <select
-                name="category_id"
-                required
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  const cat = categories.find((c) => c.id === e.target.value);
-                  if (cat?.name === "Gotcha") {
-                    setRequiresTarget(true);
-                    setGotchaDesc(true);
-                  } else {
-                    setGotchaDesc(false);
-                  }
-                }}
-                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white"
-              >
-                <option value="">Select category...</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+        <div className="mb-5 rounded-2xl border border-slate-700/60 bg-gradient-to-r from-slate-800/80 via-slate-800/50 to-slate-800/80 p-4 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-2xl">
+              ⚙️
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-300">
-                Title
-              </label>
-              <input
-                name="title"
-                required
-                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white placeholder:text-gray-500"
-                placeholder="e.g. Secret Word Master"
-              />
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-extrabold text-white">Admin Panel</h1>
+              <p className="text-xs text-gray-400">
+                {assignments.length} actieve/voltooide opdrachten · {players.length} spelers
+              </p>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-300">
-                Description
-              </label>
-              <textarea
-                name="description"
-                rows={3}
-                defaultValue={gotchaDesc ? "Laat de persoon die wordt aangewezen dit woord zeggen, als dit je lukt, roep je \"Gotchaaa\" en krijgt ge uw punten" : ""}
-                key={gotchaDesc ? "gotcha" : "other"}
-                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white placeholder:text-gray-500"
-                placeholder="Describe what the player needs to do..."
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-300">
-                Difficulty
-              </label>
-              <select
-                name="difficulty"
-                required
-                defaultValue="medium"
-                onChange={(e) => setPoints(DIFFICULTY_POINTS[e.target.value] ?? 10)}
-                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white"
-              >
-                <option value="easy">Easy (5pts)</option>
-                <option value="medium">Medium (10pts)</option>
-                <option value="hard">Hard (20pts)</option>
-              </select>
-              <input type="hidden" name="points" value={points} />
-            </div>
-            {/* Bonus toggle */}
-            <button
-              type="button"
-              onClick={() => setBonusActive(!bonusActive)}
-              className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${
-                bonusActive
-                  ? "border-amber-500 bg-amber-500/20 text-amber-300"
-                  : "border-slate-600 bg-slate-700/50 text-gray-400"
-              }`}
-            >
-              <span className="text-lg">{bonusActive ? "✅" : "⬜"}</span>
-              <span>🌟 Bonus toevoegen</span>
-            </button>
-            {bonusActive && (
-              <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-3">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-400">
-                    Bonus beschrijving
-                  </label>
-                  <textarea
-                    name="bonus_description"
-                    rows={2}
-                    className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white placeholder:text-gray-500"
-                    placeholder="Wat moet de speler extra doen voor bonuspunten?"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-400">
-                    Bonus punten
-                  </label>
-                  <input
-                    name="bonus_points"
-                    type="number"
-                    defaultValue={5}
-                    min={0}
-                    className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white"
-                  />
-                </div>
-              </div>
-            )}
-            <input type="hidden" name="requires_target" value={requiresTarget ? "true" : ""} />
-            <button
-              type="button"
-              onClick={() => setRequiresTarget(!requiresTarget)}
-              className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition ${
-                requiresTarget
-                  ? "border-amber-500 bg-amber-500/20 text-amber-300"
-                  : "border-slate-600 bg-slate-700/50 text-gray-400"
-              }`}
-            >
-              <span className="text-lg">{requiresTarget ? "✅" : "⬜"}</span>
-              <span>Moet uitgevoerd worden op nen andere</span>
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-amber-500 py-2.5 font-bold text-black transition hover:bg-amber-400 disabled:opacity-50"
-            >
-              {loading ? "Adding..." : "Add Challenge"}
-            </button>
-          </form>
-        )}
-
-        {/* Challenge List */}
-        {tab === "list" && (
-          <div className="space-y-3">
-            {/* Category subtabs */}
-            <div className="flex flex-wrap gap-1.5">
+            {/* Menu button */}
+            <div className="relative shrink-0">
               <button
-                onClick={() => setCategoryFilter("all")}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  categoryFilter === "all"
+                onClick={() => setShowMenu((v) => !v)}
+                className="rounded-lg bg-slate-700/50 px-2.5 py-1.5 text-gray-400 transition hover:bg-slate-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" />
+                </svg>
+              </button>
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} aria-hidden />
+                  <div className="fixed right-4 top-20 z-50 min-w-[180px] rounded-xl border border-slate-700/50 bg-slate-800/95 p-1.5 shadow-xl backdrop-blur">
+                    <Link
+                      href="/admin/challenges"
+                      onClick={() => setShowMenu(false)}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition hover:bg-slate-700"
+                    >
+                      <span>Challenges beheren</span>
+                    </Link>
+                    <Link
+                      href="/scoreboard"
+                      onClick={() => setShowMenu(false)}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition hover:bg-slate-700"
+                    >
+                      <span>Scoreboard</span>
+                    </Link>
+                    {user.name === "Anton" && (
+                      <Link
+                        href="/admin/settings"
+                        onClick={() => setShowMenu(false)}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-white transition hover:bg-slate-700"
+                      >
+                        <span>Spelers bannen</span>
+                      </Link>
+                    )}
+                    <form action={logout}>
+                      <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400 transition hover:bg-slate-700">
+                        <span>Logout</span>
+                      </button>
+                    </form>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Stats row inside header card */}
+          <div className="mt-3 flex gap-1.5">
+            {[
+              { count: activeCount, label: "Actief", color: "text-blue-400" },
+              { count: completedCount, label: "Klaar", color: "text-emerald-400" },
+              { count: expiredCount, label: "Verlopen", color: "text-gray-500" },
+            ].map((s) => (
+              <div key={s.label} className="flex-1 rounded-lg bg-slate-900/50 py-1.5 text-center">
+                <p className={`text-sm font-bold ${s.color}`}>{s.count}</p>
+                <p className="text-[9px] text-gray-600">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="mb-4 space-y-2">
+          {/* Day filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 shrink-0">Dag</span>
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => setDayFilter("all")}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition ${
+                  dayFilter === "all"
                     ? "bg-amber-500 text-black"
-                    : "bg-slate-700/50 text-gray-400 hover:bg-slate-700"
+                    : "bg-slate-800 text-gray-400 hover:bg-slate-700"
                 }`}
               >
-                Alles ({challenges.length})
+                Alle
               </button>
-              {categoryNames.map((name) => {
-                const count = challenges.filter((c) => c.categories?.name === name).length;
-                return (
-                  <button
-                    key={name}
-                    onClick={() => setCategoryFilter(name)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                      categoryFilter === name
-                        ? "bg-amber-500 text-black"
-                        : "bg-slate-700/50 text-gray-400 hover:bg-slate-700"
-                    }`}
-                  >
-                    {name} ({count})
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => setShowMine(!showMine)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  showMine
-                    ? "bg-blue-500 text-white"
-                    : "bg-slate-700/50 text-gray-400 hover:bg-slate-700"
-                }`}
-              >
-                Mijn ({challenges.filter((c) => c.created_by_admin === currentAdminName).length})
-              </button>
+              {days.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDayFilter(d)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition ${
+                    dayFilter === d
+                      ? "bg-amber-500 text-black"
+                      : "bg-slate-800 text-gray-400 hover:bg-slate-700"
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
             </div>
-
-            {filteredChallenges.map((c) =>
-              editingId === c.id ? (
-                /* Inline edit form */
-                <form
-                  key={c.id}
-                  onSubmit={(e) => handleEdit(e, c.id)}
-                  className="space-y-3 rounded-xl border border-amber-500/30 bg-slate-800/90 p-4 backdrop-blur"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-amber-400">✏️ Editing</p>
-                    <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-500 hover:text-white">✕ Cancel</button>
-                  </div>
-                  <select name="category_id" defaultValue={categories.find((cat) => cat.name === c.categories?.name)?.id || ""} required className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white">
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                  <input name="title" defaultValue={c.title} required className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" />
-                  <textarea name="description" defaultValue={c.description} rows={3} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" />
-                  <div>
-                    <select name="difficulty" defaultValue={c.difficulty} required className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white" onChange={(e) => {
-                      const pts = DIFFICULTY_POINTS[e.target.value] ?? 10;
-                      const hidden = e.target.parentElement?.querySelector('input[name="points"]') as HTMLInputElement | null;
-                      if (hidden) hidden.value = String(pts);
-                    }}>
-                      <option value="easy">Easy (5pts)</option>
-                      <option value="medium">Medium (10pts)</option>
-                      <option value="hard">Hard (20pts)</option>
-                    </select>
-                    <input type="hidden" name="points" defaultValue={c.points} />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setEditBonusActive(!editBonusActive)}
-                    className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-xs transition ${
-                      editBonusActive
-                        ? "border-amber-500 bg-amber-500/20 text-amber-300"
-                        : "border-slate-600 bg-slate-700/50 text-gray-400"
-                    }`}
-                  >
-                    <span className="text-lg">{editBonusActive ? "✅" : "⬜"}</span>
-                    <span>🌟 Bonus</span>
-                  </button>
-                  {editBonusActive && (
-                    <div className="rounded-lg border border-slate-600/50 bg-slate-700/30 p-3 space-y-2">
-                      <textarea name="bonus_description" defaultValue={c.bonus_description || ""} rows={2} placeholder="Bonus beschrijving..." className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white placeholder:text-gray-500" />
-                      <input name="bonus_points" type="number" defaultValue={c.bonus_points || 5} min={0} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-xs text-white" />
-                    </div>
-                  )}
-                  <input type="hidden" name="requires_target" value={c.requires_target ? "true" : ""} />
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-400">Door (admin)</label>
-                    <select name="created_by_admin" defaultValue={c.created_by_admin || ""} className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white">
-                      <option value="">Onbekend</option>
-                      {adminNames.map((name) => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <button type="submit" disabled={editLoading} className="w-full rounded-lg bg-amber-500 py-2 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-50">
-                    {editLoading ? "Saving..." : "💾 Save"}
-                  </button>
-                </form>
-              ) : (
-                /* Challenge card */
-                <div
-                  key={c.id}
-                  className="rounded-xl border border-slate-700 bg-slate-800/80 p-3 backdrop-blur"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-amber-400">
-                          {c.categories?.name}
-                        </span>
-                        {c.bonus_points > 0 && (
-                          <span className="text-xs text-yellow-400">🌟 +{c.bonus_points}bonus</span>
-                        )}
-                      </div>
-                      <p className="font-semibold text-white">
-                        {c.title}
-                        {c.requires_target && <span className="ml-1 text-xs text-orange-400">🎯</span>}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {c.difficulty} · {c.points}pts
-                        {c.requires_target && " · op iemand anders"}
-                      </p>
-                      <p className="text-[10px] text-gray-600">
-                        Door: {c.created_by_admin || "Onbekend"}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 gap-1.5">
-                      <button
-                        onClick={() => { setEditingId(c.id); setEditBonusActive(!!(c.bonus_description || c.bonus_points > 0)); }}
-                        className="rounded-lg bg-slate-600/40 px-2.5 py-1 text-sm text-gray-300 transition hover:bg-slate-600"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(c.id)}
-                        className="rounded-lg bg-red-500/20 px-2.5 py-1 text-sm font-medium text-red-400 transition hover:bg-red-500/30"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            )}
-            {filteredChallenges.length === 0 && (
-              <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-6 text-center text-gray-400">
-                {categoryFilter === "all" ? "No challenges yet. Add some!" : `Geen challenges in "${categoryFilter}"`}
-              </div>
-            )}
           </div>
-        )}
+
+          {/* Player filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 shrink-0">Speler</span>
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => setPlayerFilter("all")}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition ${
+                  playerFilter === "all"
+                    ? "bg-amber-500 text-black"
+                    : "bg-slate-800 text-gray-400 hover:bg-slate-700"
+                }`}
+              >
+                Alle
+              </button>
+              {players.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setPlayerFilter(p.id)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition ${
+                    playerFilter === p.id
+                      ? "bg-amber-500 text-black"
+                      : "bg-slate-800 text-gray-400 hover:bg-slate-700"
+                  }`}
+                >
+                  {p.name.replace(" (Admin)", "")}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* "Mijn" filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 shrink-0">Mijn</span>
+            <button
+              onClick={() => setShowMine(!showMine)}
+              className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition ${
+                showMine
+                  ? "bg-purple-500 text-white"
+                  : "bg-slate-800 text-gray-400 hover:bg-slate-700"
+              }`}
+            >
+              Mijn challenges ({myAssignedCount})
+            </button>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-x-3 gap-y-1 text-[10px] text-gray-500">
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-blue-400"></span>Actief</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>Voltooid</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-gray-500"></span>Verlopen</span>
+          </div>
+        </div>
+
+        {/* Assignments grouped by player */}
+        <div className="space-y-3">
+          {assignments.length === 0 ? (
+            <div className="rounded-2xl border border-slate-700/40 bg-slate-800/40 p-8 text-center">
+              <p className="text-3xl mb-3">📭</p>
+              <p className="text-sm font-medium text-gray-300">Nog geen opdrachten toegewezen</p>
+              <p className="mt-1 text-xs text-gray-500">Zodra het spel begint en challenges worden getrokken, verschijnen ze hier.</p>
+            </div>
+          ) : filteredAssignments.length === 0 && showMine ? (
+            <div className="rounded-2xl border border-slate-700/40 bg-slate-800/40 p-8 text-center">
+              <p className="text-2xl mb-2">🎲</p>
+              <p className="text-sm font-medium text-gray-300">Nog geen van jouw challenges getrokken</p>
+              <p className="mt-1 text-xs text-gray-500">
+                {myWaitingCount > 0
+                  ? `${myWaitingCount} van jouw challenges wachten nog om getrokken te worden.`
+                  : "Al jouw challenges zijn al toegewezen!"}
+              </p>
+            </div>
+          ) : filteredAssignments.length === 0 ? (
+            <div className="rounded-2xl border border-slate-700/40 bg-slate-800/40 p-8 text-center">
+              <p className="text-sm text-gray-400">Geen opdrachten voor deze filters.</p>
+            </div>
+          ) : (
+            Array.from(assignmentsByPlayer.entries())
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([playerName, playerAssignments]) => {
+                const playerCompleted = playerAssignments.filter((a) => a.status === "completed").length;
+                return (
+                  <div key={playerName} className="rounded-2xl border border-slate-700/40 bg-slate-800/60 overflow-hidden">
+                    {/* Player header */}
+                    <div className="flex items-center gap-2.5 border-b border-slate-700/30 px-4 py-2.5 bg-slate-800/80">                      <h3 className="font-bold text-white text-sm">
+                        {playerName.replace(" (Admin)", "")}
+                      </h3>
+                      <span className="ml-auto rounded-full bg-slate-700/50 px-2 py-0.5 text-[10px] font-bold text-gray-400">
+                        {playerCompleted}/{playerAssignments.length}
+                      </span>
+                    </div>
+                    {/* Assignments */}
+                    <div className="divide-y divide-slate-700/20">
+                      {playerAssignments
+                        .sort((a, b) => a.day - b.day)
+                        .map((a) => (
+                          <div
+                            key={a.id}
+                            className={`flex items-center gap-2.5 px-4 py-2.5 ${STATUS_COLORS[a.status] || STATUS_COLORS.active}`}
+                          >
+                            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-900/50 text-[10px] font-black text-gray-500">
+                              {a.day}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">
+                                {a.challenges?.title || "?"}
+                              </p>
+                              <p className="text-[10px] opacity-60">
+                                {a.challenges?.categories?.name} · {a.challenges?.difficulty} · {a.challenges?.points}pts
+                                {a.challenges?.bonus_points ? ` · +${a.challenges.bonus_points}🌟` : ""}
+                                {a.target_player_name && (
+                                  <span className="ml-1">🎯 {a.target_player_name}</span>
+                                )}
+                              </p>
+                            </div>
+                            <span className="shrink-0">
+                              <span className={`inline-block h-3 w-3 rounded-full ${
+                                a.status === "active" ? "bg-blue-400" :
+                                a.status === "completed" ? "bg-emerald-400" :
+                                "bg-gray-500"
+                              }`}></span>
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                );
+              })
+          )}
+        </div>
       </div>
     </div>
   );

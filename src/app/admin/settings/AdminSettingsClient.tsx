@@ -39,7 +39,7 @@ export default function AdminSettingsClient({
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <Link
-            href="/dashboard"
+            href="/admin"
             className="rounded-lg bg-slate-700/50 px-3 py-2 text-sm text-gray-400 transition hover:bg-slate-700 hover:text-white"
           >
             ← Terug

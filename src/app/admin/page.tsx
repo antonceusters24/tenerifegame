@@ -12,30 +12,32 @@ export default async function AdminPage() {
 
   const supabase = await createClient();
 
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
+  // Get assignments with challenge and user info
+  const { data: assignments } = await supabase
+    .from(getTable("assignments"))
+    .select("*, challenges:challenge_id(id, title, difficulty, points, bonus_description, bonus_points, created_by_admin, categories(name)), users:user_id(name, emoji)")
+    .order("day", { ascending: true });
+
+  // Get players
+  const { data: players } = await supabase
+    .from("users")
+    .select("id, name, emoji")
+    .eq("role", "player")
     .order("name");
 
-  const { data: challenges } = await supabase
+  // Count total challenges by this admin (to show "X waiting to be drawn")
+  const adminName = user.name.replace(" (Admin)", "");
+  const { count: totalMyChallenges } = await supabase
     .from(getTable("challenges"))
-    .select("*, categories(*)")
-    .order("created_at", { ascending: false });
-
-  // Get admin names for the creator dropdown
-  const { data: admins } = await supabase
-    .from("users")
-    .select("name")
-    .eq("role", "admin");
-
-  const adminNames = (admins || []).map((a) => a.name.replace(" (Admin)", ""));
+    .select("id", { count: "exact", head: true })
+    .eq("created_by_admin", adminName);
 
   return (
     <AdminClient
       user={user}
-      categories={categories || []}
-      challenges={challenges || []}
-      adminNames={adminNames}
+      assignments={assignments || []}
+      players={players || []}
+      totalMyChallenges={totalMyChallenges || 0}
     />
   );
 }
